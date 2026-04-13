@@ -9,6 +9,7 @@ st.markdown("""
 <style>
 body {
     background-color: #f0f8ff;
+    font-family: 'Segoe UI', sans-serif;
 }
 .metric-card {
     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
@@ -16,10 +17,10 @@ body {
     border-radius: 14px;
     color: white;
     text-align: center;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 .metric-title {font-size: 14px; opacity: 0.9;}
-.metric-value {font-size: 24px; font-weight: bold;}
+.metric-value {font-size: 26px; font-weight: bold;}
 .metric-sub {font-size: 14px; opacity: 0.8;}
 </style>
 """, unsafe_allow_html=True)
@@ -71,7 +72,7 @@ if uploaded_file:
 
     col2.markdown(f"""
     <div class='metric-card'>
-      <div class='metric-title'>Élec</div>
+      <div class='metric-title'>Élec ⚡</div>
       <div class='metric-value'>{ventes_elec}/{objectif_elec}</div>
       <div class='metric-sub'>{taux_elec:.1%}</div>
     </div>
@@ -79,7 +80,7 @@ if uploaded_file:
 
     col3.markdown(f"""
     <div class='metric-card'>
-      <div class='metric-title'>Gaz</div>
+      <div class='metric-title'>Gaz 🔥</div>
       <div class='metric-value'>{ventes_gaz}/{objectif_gaz}</div>
       <div class='metric-sub'>{taux_gaz:.1%}</div>
     </div>
@@ -124,12 +125,12 @@ if uploaded_file:
     agent_select = st.selectbox("Choisir un agent", ventes_agent["agent"].dropna().unique())
     df_agent = df[df["agent"] == agent_select]
 
-    objectif_indiv_total = heures * 0.75
-    obj_elec = objectif_elec * (objectif_indiv_total / objectif_total) if objectif_total else 0
-    obj_gaz = objectif_gaz * (objectif_indiv_total / objectif_total) if objectif_total else 0
+    # Objectifs individuels selon ta formule
     unique_clients = df["user id"].nunique()
-    obj_free = unique_clients * 0.05
-    obj_hs = unique_clients * 0.05
+    obj_elec = heures * 0.75 * (objectif_elec / objectif_total) if objectif_total else 0
+    obj_gaz = heures * 0.75 * (objectif_gaz / objectif_total) if objectif_total else 0
+    obj_free = heures * 0.75 * ((unique_clients * 0.05) / objectif_total) if objectif_total else 0
+    obj_hs = heures * 0.75 * ((unique_clients * 0.05) / objectif_total) if objectif_total else 0
 
     recap_fournisseurs = []
     for fournisseur in df_agent["get_provider"].unique():
@@ -140,10 +141,10 @@ if uploaded_file:
 
         recap_fournisseurs.append({
             "Fournisseur": fournisseur,
-            "Elec": f"{ventes_elec}/{int(obj_elec)}",
-            "Gaz": f"{ventes_gaz}/{int(obj_gaz)}",
-            "Free": f"{ventes_free}/{int(obj_free)}",
-            "HomeServe": f"{ventes_hs}/{int(obj_hs)}"
+            "Élec ⚡": f"{ventes_elec}/{int(obj_elec)}",
+            "Gaz 🔥": f"{ventes_gaz}/{int(obj_gaz)}",
+            "Free 📱": f"{ventes_free}/{int(obj_free)}",
+            "HomeServe 🏠": f"{ventes_hs}/{int(obj_hs)}"
         })
 
     recap_df = pd.DataFrame(recap_fournisseurs)
