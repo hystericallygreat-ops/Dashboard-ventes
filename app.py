@@ -87,7 +87,6 @@ if uploaded_file:
     """, unsafe_allow_html=True)
 
     st.markdown("---")
-
     # ---------------- GRAPHIQUES ----------------
     colg1, colg2 = st.columns(2)
 
@@ -155,10 +154,43 @@ if uploaded_file:
     recap_df = pd.DataFrame(recap_fournisseurs)
 
     # Ligne TOTAL
-    recap_df.loc["Total"] = [
+    recap_df.loc[len(recap_df)] = [
         "TOTAL",
         f"{df_agent[df_agent['energie'].str.lower() == 'elec'].shape[0]}/{int(objectif_elec)}",
         f"{df_agent[df_agent['energie'].str.lower().isin(['gaz','gas'])].shape[0]}/{int(objectif_gaz)}",
         f"{df_agent[df_agent['get_provider'].str.lower() == 'free'].shape[0]}/{int(unique_clients*0.05)}",
         f"{df_agent[df_agent['get_provider'].str.lower() == 'homeserve'].shape[0]}/{int(unique_clients*0.05)}",
-        f"{df_agent.shape[0]}/{int(object
+        f"{df_agent.shape[0]}/{int(objectif_total)}"
+    ]
+
+    st.write(f"Objectifs individuels pour {agent_select} (heures planifiées: {heures})")
+    st.dataframe(recap_df, use_container_width=True)
+
+    # ---------------- GRAPHIQUE COMPARATIF ----------------
+    st.subheader("📊 Comparatif ventes vs objectifs par fournisseur")
+
+    # Construire un DataFrame comparatif
+    ventes_vs_obj = []
+    for fournisseur in objectifs["Fournisseur"].unique():
+        ventes = df[df["get_provider"].str.strip().str.lower() == fournisseur.strip().lower()].shape[0]
+        obj_total = objectifs[objectifs["Fournisseur"].str.strip().str.lower() == fournisseur.strip().lower()]["Objectifs Total"].sum()
+        limite = objectifs[objectifs["Fournisseur"].str.strip().str.lower() == fournisseur.strip().lower()]["Limite"].values[0]
+
+        ventes_vs_obj.append({
+            "Fournisseur": fournisseur,
+            "Ventes": ventes,
+            "Objectif": obj_total,
+            "Limite": limite
+        })
+
+    comp_df = pd.DataFrame(ventes_vs_obj)
+
+    # Graphique comparatif
+    fig_comp = px.bar(comp_df, x="Fournisseur", y=["Ventes", "Objectif"],
+                      barmode="group", title="Ventes vs Objectifs par fournisseur",
+                      color_discrete_map={"Ventes":"#3b82f6","Objectif":"#1e3a8a"})
+
+    st.plotly_chart(fig_comp, use_container_width=True)
+
+else:
+    st.info("Veuillez uploader un fichier Excel")
