@@ -26,12 +26,16 @@ st.markdown("""
 
 st.title("⚡ Dashboard des ventes")
 
+# ---------------- UPLOAD ----------------
+
 uploaded_file = st.file_uploader("Uploader votre fichier Excel", type=["xlsx"])
 
-if uploaded_file:
-xls = pd.ExcelFile(uploaded_file)
+if uploaded_file is not None:
 
 ```
+# ---------------- LECTURE ----------------
+xls = pd.ExcelFile(uploaded_file)
+
 df = pd.read_excel(xls, "Extraction")
 code = pd.read_excel(xls, "Code")
 objectifs = pd.read_excel(xls, "Objectifs")
@@ -54,8 +58,9 @@ df["agent"] = df["agent"].fillna("Inconnu")
 # Date
 df["get_date_lead_date"] = pd.to_datetime(df["get_date_lead_date"], errors="coerce")
 
-# ---------------- FILTRE DATE ----------------
+# ---------------- FILTRE ----------------
 st.sidebar.header("Filtres")
+
 date_range = st.sidebar.date_input("Filtrer par date", [])
 
 if len(date_range) == 2:
@@ -168,8 +173,8 @@ for fournisseur in df_agent["get_provider"].unique():
 
     df_f = df_agent[df_agent["get_provider"] == fournisseur]
 
-    ventes_elec = len(df_f[df_f["energie"] == "elec"])
-    ventes_gaz = len(df_f[df_f["energie"].isin(["gaz", "gas"])])
+    ventes_elec_f = len(df_f[df_f["energie"] == "elec"])
+    ventes_gaz_f = len(df_f[df_f["energie"].isin(["gaz", "gas"])])
 
     obj_row = objectifs[objectifs["Fournisseur"].str.strip().str.lower() == fournisseur]
 
@@ -177,9 +182,9 @@ for fournisseur in df_agent["get_provider"].unique():
 
     recap_fournisseurs.append({
         "Fournisseur": fournisseur,
-        "Élec ⚡": ventes_elec,
-        "Gaz 🔥": ventes_gaz,
-        "Total 🎯": ventes_elec + ventes_gaz,
+        "Élec ⚡": ventes_elec_f,
+        "Gaz 🔥": ventes_gaz_f,
+        "Total 🎯": ventes_elec_f + ventes_gaz_f,
         "Objectif": int(obj_total_f)
     })
 
@@ -195,10 +200,10 @@ st.subheader("📊 Ventes vs Objectifs")
 ventes_vs_obj = []
 
 for fournisseur in objectifs["Fournisseur"].str.lower().unique():
+
     ventes = df[df["get_provider"] == fournisseur].shape[0]
 
     obj_row = objectifs[objectifs["Fournisseur"].str.strip().str.lower() == fournisseur]
-
     obj_total = obj_row["Objectifs Total"].sum() if not obj_row.empty else 0
 
     ventes_vs_obj.append({
