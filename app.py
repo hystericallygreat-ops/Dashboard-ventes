@@ -34,7 +34,7 @@ if uploaded_file:
 
     df = pd.read_excel(xls, "Extraction")
     code = pd.read_excel(xls, "Code")
-    objectifs = pd.read_excel(xls, "Objectifs")
+    objectifs = pd.read_excel(xls, "Objectifs")  # contient Fournisseur, Objectif Elec, Objectif Gaz, Objectifs Total, Limite
 
     # Nettoyage des colonnes
     df["responder"] = df["responder"].astype(str).str.strip().str.upper()
@@ -125,44 +125,31 @@ if uploaded_file:
     agent_select = st.selectbox("Choisir un agent", ventes_agent["agent"].dropna().unique())
     df_agent = df[df["agent"] == agent_select]
 
-    unique_clients = df["user id"].nunique()
-
     recap_fournisseurs = []
     for fournisseur in df_agent["get_provider"].unique():
         ventes_elec = len(df_agent[(df_agent["get_provider"] == fournisseur) & (df_agent["energie"].str.lower() == "elec")])
         ventes_gaz = len(df_agent[(df_agent["get_provider"] == fournisseur) & (df_agent["energie"].str.lower().isin(["gaz", "gas"]))])
-        ventes_free = len(df_agent[(df_agent["get_provider"] == fournisseur) & (df_agent["get_provider"].str.lower() == "free")])
-        ventes_hs = len(df_agent[(df_agent["get_provider"] == fournisseur) & (df_agent["get_provider"].str.lower() == "homeserve")])
 
         # Objectifs par fournisseur depuis la feuille "Objectifs"
-        obj_fournisseur = objectifs[objectifs["Fournisseur"] == fournisseur]
+        obj_fournisseur = objectifs[objectifs["Fournisseur"].str.strip().str.lower() == fournisseur.strip().lower()]
 
         obj_elec_f = heures * 0.75 * (obj_fournisseur["Objectif Elec"].sum() / objectif_total) if objectif_total else 0
         obj_gaz_f = heures * 0.75 * (obj_fournisseur["Objectif Gaz"].sum() / objectif_total) if objectif_total else 0
-        obj_free_f = heures * 0.75 * ((unique_clients * 0.05) / objectif_total) if objectif_total else 0
-        obj_hs_f = heures * 0.75 * ((unique_clients * 0.05) / objectif_total) if objectif_total else 0
+        obj_total_f = heures * 0.75 * (obj_fournisseur["Objectifs Total"].sum() / objectif_total) if objectif_total else 0
 
         recap_fournisseurs.append({
             "Fournisseur": fournisseur,
             "Élec ⚡": f"{ventes_elec}/{int(obj_elec_f)}",
             "Gaz 🔥": f"{ventes_gaz}/{int(obj_gaz_f)}",
-            "Free 📱": f"{ventes_free}/{int(obj_free_f)}",
-            "HomeServe 🏠": f"{ventes_hs}/{int(obj_hs_f)}"
+            "Total 🎯": f"{ventes_elec+ventes_gaz}/{int(obj_total_f)}",
+            "Limite": obj_fournisseur["Limite"].values[0] if not obj_fournisseur.empty else ""
         })
 
     recap_df = pd.DataFrame(recap_fournisseurs)
-
-    # Ligne TOTAL
-    recap_df.loc["Total"] = [
-        "TOTAL",
-        f"{df_agent[df_agent['energie'].str.lower() == 'elec'].shape[0]}/{int(obj_elec)}",
-        f"{df_agent[df_agent['energie'].str.lower().isin(['gaz','gas'])].shape[0]}/{int(obj_gaz)}",
-        f"{df_agent[df_agent['get_provider'].str.lower() == 'free'].shape[0]}/{int(obj_free)}",
-        f"{df_agent[df_agent['get_provider'].str.lower() == 'homeserve'].shape[0]}/{int(obj_hs)}"
-    ]
 
     st.write(f"Objectifs individuels pour {agent_select} (heures planifiées: {heures})")
     st.dataframe(recap_df, use_container_width=True)
 
 else:
     st.info("Veuillez uploader un fichier Excel")
+
