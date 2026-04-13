@@ -152,3 +152,4 @@ if uploaded_file:
 
 else:
     st.info("Veuillez uploader un fichier Excel")
+
