@@ -137,6 +137,49 @@ if uploaded_file is not None:
     recap_df.loc["TOTAL", "Fournisseur"] = "TOTAL"
     st.dataframe(recap_df, use_container_width=True)
 
-else:
-    st.info("Veuillez uploader un fichier Excel pour afficher le dashboard.")
+    st.markdown("---")
 
+    # ---------------- COMPARATIF ----------------
+       st.subheader("📊 Ventes vs Objectifs")
+    ventes_vs_obj = []
+    for fournisseur in objectifs["Fournisseur"].str.strip().str.lower().unique():
+        ventes = df[df["get_provider"] == fournisseur].shape[0]
+        obj_row = objectifs[objectifs["Fournisseur"].str.strip().str.lower() == fournisseur]
+        obj_total = obj_row["Objectifs Total"].sum() if not obj_row.empty else 0
+        limite = obj_row["Limite"].sum() if "Limite" in obj_row.columns else 0
+        ventes_vs_obj.append({"Fournisseur": fournisseur, "Ventes": ventes, "Objectif": obj_total, "Limite": limite})
+
+    comp_df = pd.DataFrame(ventes_vs_obj)
+    comp_df["Taux"] = comp_df["Ventes"] / comp_df["Objectif"].replace(0, 1)
+
+    fig_comp = px.bar(
+        comp_df,
+        x="Fournisseur",
+        y=["Ventes", "Objectif"],
+        barmode="group",
+        color="Ventes",
+        color_continuous_scale="Blues"
+    )
+
+    # Ajout des lignes de limite comme alerte visuelle
+    for i, row in comp_df.iterrows():
+        if row["Limite"] > 0:
+            fig_comp.add_shape(
+                type="line",
+                x0=row["Fournisseur"],
+                x1=row["Fournisseur"],
+                y0=row["Limite"],
+                y1=row["Limite"],
+                line=dict(color="red", dash="dash"),
+                xref="x",
+                yref="y"
+            )
+            fig_comp.add_annotation(
+                x=row["Fournisseur"],
+                y=row["Limite"],
+                text="Limite",
+                showarrow=False,
+                font=dict(color="red")
+            )
+
+    st.plotly_chart(fig_comp, use_container_width=True)
