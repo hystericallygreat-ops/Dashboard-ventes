@@ -113,7 +113,7 @@ if uploaded_file:
         cols[i].markdown(f"""<div class='metric-card'><div class='metric-value'>{row.agent}</div><div>{row.ventes} ventes</div></div>""", unsafe_allow_html=True)
 
     st.markdown("---")
-      # ---------------- VUE DÉTAILLÉE PAR AGENT ----------------
+    # ---------------- VUE DÉTAILLÉE PAR AGENT ----------------
     st.subheader("🔍 Vue détaillée par agent")
     heures = st.number_input("Heures planifiées du mois", min_value=0.0, step=1.0)
     agent_select = st.selectbox("Choisir un agent", ventes_agent["agent"].dropna().unique())
@@ -138,8 +138,8 @@ if uploaded_file:
 
         # Objectifs individuels proportionnels pour Elec et Gaz
         obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
-        obj_elec_f = objectif_elec * (objectif_indiv_total / objectif_total) if objectif_total else 0
-        obj_gaz_f = objectif_gaz * (objectif_indiv_total / objectif_total) if objectif_total else 0
+        obj_elec_f = (objectif_elec * (objectif_indiv_total / objectif_total)) if objectif_total else 0
+        obj_gaz_f = (objectif_gaz * (objectif_indiv_total / objectif_total)) if objectif_total else 0
 
         recap_rows.append({
             "Fournisseur": fournisseur,
