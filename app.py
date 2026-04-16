@@ -2,42 +2,35 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Dashboard Ventes", layout="wide")
+st.set_page_config(page_title="Dashboard SaaS Ventes", layout="wide")
 
-# ---------------- STYLE ----------------
+# ---------------- STYLE PREMIUM ----------------
 st.markdown("""
 <style>
-body {
-    background-color: #f5f7fb;
-}
+body {background-color: #f5f7fb;}
 
 .metric-card {
     background: white;
-    padding: 18px;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+}
+
+.metric-title {font-size: 13px; color: #6b7280;}
+.metric-value {font-size: 28px; font-weight: bold;}
+.metric-sub {font-size: 14px;}
+
+.section {
+    background: white;
+    padding: 15px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    border-left: 5px solid #4f46e5;
-}
-
-.metric-title {
-    font-size: 13px;
-    color: #6b7280;
-}
-
-.metric-value {
-    font-size: 26px;
-    font-weight: bold;
-    color: #111827;
-}
-
-.metric-sub {
-    font-size: 14px;
-    color: #10b981;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Dashboard des ventes")
+st.title("📊 Dashboard SaaS - Ventes")
 
 uploaded_file = st.file_uploader("Uploader votre fichier Excel", type=["xlsx"])
 
@@ -60,22 +53,31 @@ if uploaded_file:
 
     df["agent"] = df["agent"].fillna("Inconnu")
 
-    # ---------------- KPI ----------------
-    total_sales = len(df)
-    objectif_total = objectifs["Objectifs Total"].sum()
-    objectif_elec = objectifs["Objectif Elec"].sum()
-    objectif_gaz = objectifs["Objectif Gaz"].sum()
+    # ---------------- SIDEBAR FILTRES ----------------
+    st.sidebar.header("🔎 Filtres")
 
-    ventes_elec = len(df[df["energie"].str.lower() == "elec"])
-    ventes_gaz = len(df[df["energie"].str.lower().isin(["gaz", "gas"])])
+    agents = st.sidebar.multiselect("Agent", df["agent"].unique(), default=df["agent"].unique())
+    fournisseurs = st.sidebar.multiselect("Fournisseur", df["get_provider"].unique(), default=df["get_provider"].unique())
+    energie = st.sidebar.multiselect("Énergie", df["energie"].unique(), default=df["energie"].unique())
+
+    df_filtered = df[
+        (df["agent"].isin(agents)) &
+        (df["get_provider"].isin(fournisseurs)) &
+        (df["energie"].isin(energie))
+    ]
+
+    # ---------------- KPI ----------------
+    total_sales = len(df_filtered)
+    objectif_total = objectifs["Objectifs Total"].sum()
+
+    ventes_elec = len(df_filtered[df_filtered["energie"].str.lower() == "elec"])
+    ventes_gaz = len(df_filtered[df_filtered["energie"].str.lower().isin(["gaz", "gas"])])
 
     taux_global = total_sales / objectif_total if objectif_total else 0
-    taux_elec = ventes_elec / objectif_elec if objectif_elec else 0
-    taux_gaz = ventes_gaz / objectif_gaz if objectif_gaz else 0
 
     col1, col2, col3 = st.columns(3)
 
-    def kpi_card(col, title, value, taux):
+    def kpi(col, title, value, taux):
         col.markdown(f"""
         <div class='metric-card'>
             <div class='metric-title'>{title}</div>
@@ -84,82 +86,44 @@ if uploaded_file:
         </div>
         """, unsafe_allow_html=True)
 
-    kpi_card(col1, "Ventes Totales", f"{total_sales}/{objectif_total}", taux_global)
-    kpi_card(col2, "Électricité", f"{ventes_elec}/{objectif_elec}", taux_elec)
-    kpi_card(col3, "Gaz", f"{ventes_gaz}/{objectif_gaz}", taux_gaz)
-
-    st.markdown("---")
+    kpi(col1, "Ventes", total_sales, taux_global)
+    kpi(col2, "Élec", ventes_elec, ventes_elec / total_sales if total_sales else 0)
+    kpi(col3, "Gaz", ventes_gaz, ventes_gaz / total_sales if total_sales else 0)
 
     # ---------------- GRAPHIQUES ----------------
     colg1, colg2 = st.columns(2)
 
-    ventes_fournisseur = df.groupby("get_provider").size().reset_index(name="ventes")
+    ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
-    fig_fournisseur = px.bar(
-        ventes_fournisseur,
-        x="get_provider",
-        y="ventes",
-        color="ventes",
-        color_continuous_scale="Blues"
-    )
+    fig1 = px.bar(ventes_fournisseur, x="get_provider", y="ventes", color="ventes")
+    fig1.update_layout(plot_bgcolor="white")
 
-    fig_fournisseur.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="Ventes par fournisseur"
-    )
+    colg1.plotly_chart(fig1, use_container_width=True)
 
-    colg1.plotly_chart(fig_fournisseur, use_container_width=True)
+    ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes").sort_values(by="ventes", ascending=False)
 
-    ventes_agent = df.groupby("agent").size().reset_index(name="ventes")
-    ventes_agent = ventes_agent.sort_values(by="ventes", ascending=False)
+    fig2 = px.bar(ventes_agent, x="ventes", y="agent", orientation="h", color="ventes")
+    fig2.update_layout(plot_bgcolor="white", yaxis=dict(autorange="reversed"))
 
-    fig_agents = px.bar(
-        ventes_agent,
-        x="ventes",
-        y="agent",
-        orientation="h",
-        color="ventes",
-        color_continuous_scale="Viridis"
-    )
-
-    fig_agents.update_layout(
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title="Classement agents",
-        yaxis=dict(autorange="reversed")
-    )
-
-    colg2.plotly_chart(fig_agents, use_container_width=True)
+    colg2.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("---")
 
-    # ---------------- PODIUM ----------------
-    st.subheader("🏆 Top 3 Agents")
-    top3 = ventes_agent.head(3)
-    cols = st.columns(3)
+    # ---------------- ANALYSE AGENT AVANCÉE ----------------
+    st.subheader("🎯 Performance détaillée")
 
-    colors = ["#FFD700", "#C0C0C0", "#CD7F32"]
+    heures = st.number_input("Heures planifiées", min_value=0.0, step=1.0)
+    agent_select = st.selectbox("Agent", df_filtered["agent"].unique())
 
-    for i, row in enumerate(top3.itertuples()):
-        cols[i].markdown(f"""
-        <div class='metric-card' style='border-left:5px solid {colors[i]}'>
-            <div class='metric-value'>{row.agent}</div>
-            <div>{row.ventes} ventes</div>
-        </div>
-        """, unsafe_allow_html=True)
+    df_agent = df_filtered[df_filtered["agent"] == agent_select]
 
-    st.markdown("---")
-
-    # ---------------- ANALYSE PAR AGENT (PROGRESS BARS) ----------------
-    st.subheader("🔍 Analyse par agent")
-
-    heures = st.number_input("Heures planifiées du mois", min_value=0.0, step=1.0)
-    agent_select = st.selectbox("Choisir un agent", ventes_agent["agent"].unique())
-
-    df_agent = df[df["agent"] == agent_select]
-
-    st.markdown(f"### Performance de {agent_select}")
+    def color_progress(p):
+        if p < 0.7:
+            return "red"
+        elif p < 1:
+            return "orange"
+        else:
+            return "green"
 
     for fournisseur in objectifs["Fournisseur"].dropna().unique():
 
@@ -168,28 +132,30 @@ if uploaded_file:
         ventes_elec = len(df_f[df_f["energie"].str.lower() == "elec"])
         ventes_gaz = len(df_f[df_f["energie"].str.lower().isin(["gaz", "gas"])])
 
-        # ⚠️ TA FORMULE CONSERVÉE
         obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
 
+        # 🔥 TA FORMULE CONSERVÉE
         obj_elec = heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total) if objectif_total else 0
         obj_gaz = heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total) if objectif_total else 0
 
-        progress_elec = ventes_elec / obj_elec if obj_elec else 0
-        progress_gaz = ventes_gaz / obj_gaz if obj_gaz else 0
+        p_elec = ventes_elec / obj_elec if obj_elec else 0
+        p_gaz = ventes_gaz / obj_gaz if obj_gaz else 0
 
-        st.markdown(f"#### {fournisseur}")
+        st.markdown(f"### {fournisseur}")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.write(f"⚡ Elec : {ventes_elec} / {int(obj_elec)}")
-            st.progress(min(progress_elec, 1.0))
+            st.write(f"⚡ {ventes_elec} / {int(obj_elec)}")
+            st.progress(min(p_elec, 1.0))
 
         with col2:
-            st.write(f"🔥 Gaz : {ventes_gaz} / {int(obj_gaz)}")
-            st.progress(min(progress_gaz, 1.0))
+            st.write(f"🔥 {ventes_gaz} / {int(obj_gaz)}")
+            st.progress(min(p_gaz, 1.0))
 
-        st.markdown("---")
+        # dépassement affiché
+        if p_elec > 1 or p_gaz > 1:
+            st.success("Objectif dépassé 🚀")
 
 else:
     st.info("Veuillez uploader un fichier Excel")
