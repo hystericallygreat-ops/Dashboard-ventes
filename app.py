@@ -2,23 +2,49 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="Dashboard SaaS Ventes", layout="wide")
+st.set_page_config(page_title="Dashboard Ventes", layout="wide")
 
 # ---------------- STYLE ----------------
 st.markdown("""
 <style>
-body {background-color: #f5f7fb;}
+body {
+    background-color: #EDF7FA;
+}
 
+/* KPI */
 .metric-card {
     background: white;
     padding: 20px;
     border-radius: 14px;
-    box-shadow: 0 6px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    border-left: 5px solid #0F8BC6;
 }
 
-.metric-title {font-size: 13px; color: #6b7280;}
-.metric-value {font-size: 28px; font-weight: bold;}
-.metric-sub {font-size: 14px;}
+.metric-title {
+    font-size: 13px;
+    color: #8C5C29;
+}
+
+.metric-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0F8BC6;
+}
+
+.metric-sub {
+    font-size: 14px;
+    color: #EEB055;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background-color: #9BC9DD;
+}
+
+/* Headers */
+h1, h2, h3 {
+    color: #0F8BC6;
+}
 </style>
 """, unsafe_allow_html=True)
 
