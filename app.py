@@ -4,7 +4,7 @@ import plotly.express as px
 
 st.set_page_config(page_title="Dashboard SaaS Ventes", layout="wide")
 
-# ---------------- STYLE PREMIUM ----------------
+# ---------------- STYLE ----------------
 st.markdown("""
 <style>
 body {background-color: #f5f7fb;}
@@ -19,14 +19,6 @@ body {background-color: #f5f7fb;}
 .metric-title {font-size: 13px; color: #6b7280;}
 .metric-value {font-size: 28px; font-weight: bold;}
 .metric-sub {font-size: 14px;}
-
-.section {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -53,7 +45,7 @@ if uploaded_file:
 
     df["agent"] = df["agent"].fillna("Inconnu")
 
-    # ---------------- SIDEBAR FILTRES ----------------
+    # ---------------- FILTRES ----------------
     st.sidebar.header("🔎 Filtres")
 
     agents = st.sidebar.multiselect("Agent", df["agent"].unique(), default=df["agent"].unique())
@@ -109,7 +101,7 @@ if uploaded_file:
 
     st.markdown("---")
 
-    # ---------------- ANALYSE AGENT AVANCÉE ----------------
+    # ---------------- PERFORMANCE COMPACT ----------------
     st.subheader("🎯 Performance détaillée")
 
     heures = st.number_input("Heures planifiées", min_value=0.0, step=1.0)
@@ -117,45 +109,54 @@ if uploaded_file:
 
     df_agent = df_filtered[df_filtered["agent"] == agent_select]
 
-    def color_progress(p):
-        if p < 0.7:
-            return "red"
-        elif p < 1:
-            return "orange"
-        else:
-            return "green"
+    rows = []
 
     for fournisseur in objectifs["Fournisseur"].dropna().unique():
 
         df_f = df_agent[df_agent["get_provider"].str.lower() == fournisseur.lower()]
+        obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
 
         ventes_elec = len(df_f[df_f["energie"].str.lower() == "elec"])
         ventes_gaz = len(df_f[df_f["energie"].str.lower().isin(["gaz", "gas"])])
 
-        obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
-
-        # 🔥 TA FORMULE CONSERVÉE
         obj_elec = heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total) if objectif_total else 0
         obj_gaz = heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total) if objectif_total else 0
 
         p_elec = ventes_elec / obj_elec if obj_elec else 0
         p_gaz = ventes_gaz / obj_gaz if obj_gaz else 0
 
-        st.markdown(f"### {fournisseur}")
+        rows.append({
+            "fournisseur": fournisseur,
+            "p_elec": p_elec,
+            "p_gaz": p_gaz,
+            "ventes_elec": ventes_elec,
+            "ventes_gaz": ventes_gaz,
+            "obj_elec": int(obj_elec) if obj_elec > 0 else 0,
+            "obj_gaz": int(obj_gaz) if obj_gaz > 0 else 0
+        })
 
-        col1, col2 = st.columns(2)
+    # 🔥 TRI POWER BI (meilleur en haut)
+    rows = sorted(rows, key=lambda x: (x["p_elec"] + x["p_gaz"]), reverse=True)
 
-        with col1:
-            st.write(f"⚡ {ventes_elec} / {int(obj_elec)}")
-            st.progress(min(p_elec, 1.0))
+    def emoji(p):
+        if p < 0.7:
+            return "🔴"
+        elif p < 1:
+            return "🟠"
+        else:
+            return "🟢"
 
-        with col2:
-            st.write(f"🔥 {ventes_gaz} / {int(obj_gaz)}")
-            st.progress(min(p_gaz, 1.0))
+    for r in rows:
 
-        # dépassement affiché
-        if p_elec > 1 or p_gaz > 1:
-            st.success("Objectif dépassé 🚀")
+        st.markdown(f"**{r['fournisseur']}**")
+
+        st.write(f"{emoji(r['p_elec'])} ⚡ {r['p_elec']:.0%} ({r['ventes_elec']} / {r['obj_elec']})")
+        st.progress(min(r["p_elec"], 1.0))
+
+        st.write(f"{emoji(r['p_gaz'])} 🔥 {r['p_gaz']:.0%} ({r['ventes_gaz']} / {r['obj_gaz']})")
+        st.progress(min(r["p_gaz"], 1.0))
+
+        st.markdown("")
 
 else:
     st.info("Veuillez uploader un fichier Excel")
