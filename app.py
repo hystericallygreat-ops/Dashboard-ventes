@@ -45,6 +45,9 @@ if uploaded_file:
 
     df["agent"] = df["agent"].fillna("Inconnu")
 
+    # 👉 IMPORTANT : adapte ici le nom de ta colonne date
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
     # ---------------- FILTRES ----------------
     st.sidebar.header("🔎 Filtres")
 
@@ -52,11 +55,24 @@ if uploaded_file:
     fournisseurs = st.sidebar.multiselect("Fournisseur", df["get_provider"].unique(), default=df["get_provider"].unique())
     energie = st.sidebar.multiselect("Énergie", df["energie"].unique(), default=df["energie"].unique())
 
+    # 📅 FILTRE DATE
+    min_date = df["date"].min()
+    max_date = df["date"].max()
+
+    date_range = st.sidebar.date_input("Période", [min_date, max_date])
+
     df_filtered = df[
         (df["agent"].isin(agents)) &
         (df["get_provider"].isin(fournisseurs)) &
         (df["energie"].isin(energie))
     ]
+
+    # appliquer filtre date
+    if len(date_range) == 2:
+        df_filtered = df_filtered[
+            (df_filtered["date"] >= pd.to_datetime(date_range[0])) &
+            (df_filtered["date"] <= pd.to_datetime(date_range[1]))
+        ]
 
     # ---------------- KPI ----------------
     total_sales = len(df_filtered)
@@ -87,16 +103,12 @@ if uploaded_file:
 
     ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
-    fig1 = px.bar(ventes_fournisseur, x="get_provider", y="ventes", color="ventes")
-    fig1.update_layout(plot_bgcolor="white")
-
+    fig1 = px.bar(ventes_fournisseur, x="get_provider", y="ventes")
     colg1.plotly_chart(fig1, use_container_width=True)
 
     ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes").sort_values(by="ventes", ascending=False)
 
-    fig2 = px.bar(ventes_agent, x="ventes", y="agent", orientation="h", color="ventes")
-    fig2.update_layout(plot_bgcolor="white", yaxis=dict(autorange="reversed"))
-
+    fig2 = px.bar(ventes_agent, x="ventes", y="agent", orientation="h")
     colg2.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("---")
@@ -127,6 +139,7 @@ if uploaded_file:
 
         rows.append({
             "fournisseur": fournisseur,
+            "p_total": p_elec + p_gaz,
             "p_elec": p_elec,
             "p_gaz": p_gaz,
             "ventes_elec": ventes_elec,
@@ -135,28 +148,25 @@ if uploaded_file:
             "obj_gaz": int(obj_gaz) if obj_gaz > 0 else 0
         })
 
-    # 🔥 TRI POWER BI (meilleur en haut)
-    rows = sorted(rows, key=lambda x: (x["p_elec"] + x["p_gaz"]), reverse=True)
+    # tri
+    rows = sorted(rows, key=lambda x: x["p_total"], reverse=True)
 
     def emoji(p):
-        if p < 0.7:
-            return "🔴"
-        elif p < 1:
-            return "🟠"
-        else:
-            return "🟢"
+        return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
+    # 👉 AFFICHAGE ULTRA COMPACT EN LIGNE
     for r in rows:
+        col1, col2, col3 = st.columns([2, 4, 4])
 
-        st.markdown(f"**{r['fournisseur']}**")
+        col1.write(f"**{r['fournisseur']}**")
 
-        st.write(f"{emoji(r['p_elec'])} ⚡ {r['p_elec']:.0%} ({r['ventes_elec']} / {r['obj_elec']})")
-        st.progress(min(r["p_elec"], 1.0))
+        with col2:
+            st.caption(f"{emoji(r['p_elec'])} ⚡ {r['p_elec']:.0%} ({r['ventes_elec']}/{r['obj_elec']})")
+            st.progress(min(r["p_elec"], 1.0))
 
-        st.write(f"{emoji(r['p_gaz'])} 🔥 {r['p_gaz']:.0%} ({r['ventes_gaz']} / {r['obj_gaz']})")
-        st.progress(min(r["p_gaz"], 1.0))
-
-        st.markdown("")
+        with col3:
+            st.caption(f"{emoji(r['p_gaz'])} 🔥 {r['p_gaz']:.0%} ({r['ventes_gaz']}/{r['obj_gaz']})")
+            st.progress(min(r["p_gaz"], 1.0))
 
 else:
     st.info("Veuillez uploader un fichier Excel")
