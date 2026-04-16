@@ -22,7 +22,7 @@ body {background-color: #f5f7fb;}
 </style>
 """, unsafe_allow_html=True)
 
-st.title("📊 Dashboard SaaS - Ventes")
+st.title("📊 Dashboard - Ventes")
 
 uploaded_file = st.file_uploader("Uploader votre fichier Excel", type=["xlsx"])
 
