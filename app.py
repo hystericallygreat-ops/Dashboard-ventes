@@ -48,7 +48,7 @@ section[data-testid="stSidebar"] * {
     color: #0F172A !important;
 }
 
-/* -------- TAGS MULTISELECT (VERSION DOUCE) -------- */
+/* -------- TAGS MULTISELECT -------- */
 [data-baseweb="tag"] {
     background-color: #E0F2FE !important;
     color: #0369A1 !important;
