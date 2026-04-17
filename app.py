@@ -34,14 +34,14 @@ section[data-testid="stSidebar"] * {
     color:#0F172A !important;
 }
 
-/* TAGS DOUX */
+/* Tags doux */
 [data-baseweb="tag"] {
     background-color:#E0F2FE !important;
     color:#0369A1 !important;
     border-radius:8px;
 }
 
-/* BUTTON */
+/* Boutons */
 .stButton > button {
     background-color:#0F8BC6;
     color:white;
@@ -122,6 +122,9 @@ if uploaded_file:
     df["energie"] = clean_text(df["energie"])
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
+    # 🔥 FIX IMPORTANT (objectifs aussi clean)
+    objectifs["Fournisseur"] = clean_text(objectifs["Fournisseur"])
+
     # -------- FILTRES --------
     st.sidebar.markdown("### 🔎 Filtres")
 
@@ -150,7 +153,7 @@ if uploaded_file:
     def emoji(p):
         return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
-    # ---------------- DASHBOARD (OBJECTIFS GLOBAUX) ----------------
+    # ---------------- DASHBOARD ----------------
     if page == "📊 Dashboard":
 
         st.title("🏢 Objectifs Globaux")
@@ -159,13 +162,16 @@ if uploaded_file:
 
         for _, r in ventes_fournisseur.iterrows():
 
-            obj_row = objectifs[objectifs["Fournisseur"].str.upper() == r["get_provider"]]
+            fournisseur = r["get_provider"]
+            ventes = r["ventes"]
+
+            obj_row = objectifs[objectifs["Fournisseur"] == fournisseur]
             obj = obj_row["Objectifs Total"].sum()
 
-            p = r["ventes"] / obj if obj else 0
+            p = ventes / obj if obj else 0
 
-            st.markdown(f"**{r['get_provider']}**")
-            st.caption(f"{emoji(p)} {r['ventes']}/{int(obj)} ({p:.0%})")
+            st.markdown(f"**{fournisseur}**")
+            st.caption(f"{emoji(p)} {ventes}/{int(obj)} ({p:.0%})")
             st.progress(min(p,1.0))
 
     # ---------------- AGENTS ----------------
@@ -190,7 +196,7 @@ if uploaded_file:
             with col2:
                 st.progress(min(r["taux"],1.0))
 
-    # ---------------- OBJECTIFS (DETAILLE) ----------------
+    # ---------------- OBJECTIFS ----------------
     elif page == "🎯 Objectifs":
 
         st.title("🎯 Performance détaillée")
@@ -208,7 +214,6 @@ if uploaded_file:
         for fournisseur in objectifs["Fournisseur"].dropna().unique():
 
             df_f = df_agent[df_agent["get_provider"] == fournisseur]
-
             obj_row = objectifs[objectifs["Fournisseur"] == fournisseur]
 
             ventes_elec = len(df_f[df_f["energie"] == "ELEC"])
