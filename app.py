@@ -153,8 +153,8 @@ if uploaded_file:
     def emoji(p):
         return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
- # ---------------- DASHBOARD ----------------
- if page == "📊 Dashboard":
+# ---------------- DASHBOARD ----------------
+if page == "📊 Dashboard":
 
     st.title("🏢 Objectifs Globaux")
 
