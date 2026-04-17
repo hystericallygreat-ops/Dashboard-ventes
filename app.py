@@ -153,25 +153,45 @@ if uploaded_file:
     def emoji(p):
         return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
-    # ---------------- DASHBOARD ----------------
-    if page == "📊 Dashboard":
+ # ---------------- DASHBOARD ----------------
+ if page == "📊 Dashboard":
 
-        st.title("🏢 Objectifs Globaux")
+    st.title("🏢 Objectifs Globaux")
 
-        ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
+    # regrouper ventes
+    ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
-        for _, r in ventes_fournisseur.iterrows():
+    # merge avec objectifs
+    df_obj = objectifs.copy()
 
-            fournisseur = r["get_provider"]
-            ventes = r["ventes"]
+    df_obj = df_obj.merge(
+        ventes_fournisseur,
+        left_on="Fournisseur",
+        right_on="get_provider",
+        how="left"
+    )
 
-            obj_row = objectifs[objectifs["Fournisseur"] == fournisseur]
-            obj = obj_row["Objectifs Total"].sum()
+    df_obj["ventes"] = df_obj["ventes"].fillna(0)
 
-            p = ventes / obj if obj else 0
+    # 🔥 TRI PAR OBJECTIF (DU PLUS GRAND AU PLUS PETIT)
+    df_obj = df_obj.sort_values("Objectifs Total", ascending=False)
 
+    # 🔥 AFFICHAGE COMPACT
+    for _, r in df_obj.iterrows():
+
+        fournisseur = r["Fournisseur"]
+        ventes = int(r["ventes"])
+        obj = int(r["Objectifs Total"])
+
+        p = ventes / obj if obj else 0
+
+        col1, col2 = st.columns([4,6])
+
+        with col1:
             st.markdown(f"**{fournisseur}**")
-            st.caption(f"{emoji(p)} {ventes}/{int(obj)} ({p:.0%})")
+            st.caption(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
+
+        with col2:
             st.progress(min(p,1.0))
 
     # ---------------- AGENTS ----------------
