@@ -27,12 +27,14 @@ section[data-testid="stSidebar"] * {
     color:#0F172A !important;
 }
 
+/* Tags doux */
 [data-baseweb="tag"] {
     background-color:#E0F2FE !important;
     color:#0369A1 !important;
     border-radius:8px;
 }
 
+/* Boutons */
 .stButton > button {
     background-color:#0F8BC6;
     color:white;
@@ -155,8 +157,6 @@ if uploaded_file:
         )
 
         df_obj["ventes"] = df_obj["ventes"].fillna(0)
-
-        # 🔥 TRI PAR OBJECTIF
         df_obj = df_obj.sort_values("Objectifs Total", ascending=False)
 
         for _, r in df_obj.iterrows():
@@ -189,14 +189,21 @@ if uploaded_file:
         ventes_agent = ventes_agent.sort_values("taux", ascending=False)
 
         for _, r in ventes_agent.iterrows():
-            col1, col2 = st.columns([3,5])
+
+            agent = r["agent"]
+            ventes = int(r["ventes"])
+            taux = r["taux"]
+
+            col1, col2, col3 = st.columns([3,6,2])
 
             with col1:
-                st.markdown(f"**{r['agent']}**")
-                st.caption(f"{emoji(r['taux'])} {r['ventes']}/{objectif_agent}")
+                st.markdown(f"**{agent}**")
 
             with col2:
-                st.progress(min(r["taux"],1.0))
+                st.progress(min(taux, 1.0))
+
+            with col3:
+                st.markdown(f"{emoji(taux)} {ventes}/{objectif_agent}  \n**{taux:.0%}**")
 
     # ---------------- OBJECTIFS ----------------
     elif page == "🎯 Objectifs":
