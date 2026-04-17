@@ -10,60 +10,88 @@ SAVE_PATH = "last_uploaded.xlsx"
 # ---------------- STYLE ----------------
 st.markdown("""
 <style>
-body {background-color: #F5FAFD;}
+html, body {
+    background-color: #F7F9FB;
+}
 
-h1, h2, h3 {color:#0F8BC6;}
+.block-container {
+    padding-top: 2rem;
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+}
+
+h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.metric-card {
+    background: white;
+    padding: 18px;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+}
+
+.metric-value {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.metric-label {
+    color: #6B7280;
+    font-size: 13px;
+}
 
 .stProgress > div > div > div > div {
-    background-color: #0F8BC6;
+    background-color: #3B82F6;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGO ----------------
-try:
-    st.image(
-        "https://logo.clearbit.com/hellowatt.fr",
-        width=180
-    )
-except:
-    st.markdown("## Hello Watt")
+# ---------------- HEADER ----------------
+col_logo, col_title = st.columns([1,5])
+
+with col_logo:
+    st.image("https://logo.clearbit.com/hellowatt.fr", width=80)
+
+with col_title:
+    st.markdown("# Dashboard Ventes")
+    st.caption("Suivi des performances commerciales")
+
+st.markdown("---")
 
 # ---------------- AUTH ----------------
-st.sidebar.header("🔐 Accès Admin")
+password = st.sidebar.text_input("🔐 Admin", type="password")
+is_admin = password == "hello123"
 
-password = st.sidebar.text_input("Mot de passe", type="password")
-
-ADMIN_PASSWORD = "hello123"  # 🔥 change ici
-
-is_admin = password == ADMIN_PASSWORD
-
-# ---------------- UPLOAD ADMIN ----------------
+# ---------------- UPLOAD ----------------
 uploaded_file = None
 
 if is_admin:
-    st.sidebar.success("Mode Admin activé")
-
-    uploaded_file = st.sidebar.file_uploader("Uploader fichier Excel", type=["xlsx"])
+    uploaded_file = st.sidebar.file_uploader("Uploader Excel", type=["xlsx"])
 
     if uploaded_file is not None:
         with open(SAVE_PATH, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
     if os.path.exists(SAVE_PATH):
-        if st.sidebar.button("🗑 Supprimer fichier"):
+        if st.sidebar.button("🗑 Supprimer"):
             os.remove(SAVE_PATH)
             st.rerun()
-
 else:
     if os.path.exists(SAVE_PATH):
         uploaded_file = SAVE_PATH
 
-# ---------------- MENU ----------------
-page = st.sidebar.radio("Navigation", [
-    "📊 Dashboard",
-    "👤 Performance Agents",
-    "🏢 Objectifs Globaux"
+# ---------------- NAV ----------------
+page = st.sidebar.radio("", [
+    "Dashboard",
+    "Agents",
+    "Objectifs"
 ])
 
 # ---------------- APP ----------------
@@ -75,9 +103,8 @@ if uploaded_file:
     code = pd.read_excel(xls, "Code")
     objectifs = pd.read_excel(xls, "Objectifs")
 
-    # CLEAN
-    df["responder"] = df["responder"].astype(str).str.strip().str.upper()
-    code.iloc[:, 0] = code.iloc[:, 0].astype(str).str.strip().str.upper()
+    df["responder"] = df["responder"].astype(str).str.upper().str.strip()
+    code.iloc[:,0] = code.iloc[:,0].astype(str).str.upper().str.strip()
 
     df = df.merge(
         code.rename(columns={code.columns[0]: "responder", code.columns[1]: "agent"}),
@@ -86,16 +113,8 @@ if uploaded_file:
     )
 
     df["agent"] = df["agent"].fillna("Inconnu")
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
-    # FILTRES
-    agents = st.sidebar.multiselect("Agent", df["agent"].unique(), default=df["agent"].unique())
-    fournisseurs = st.sidebar.multiselect("Fournisseur", df["get_provider"].unique(), default=df["get_provider"].unique())
-
-    df_filtered = df[
-        (df["agent"].isin(agents)) &
-        (df["get_provider"].isin(fournisseurs))
-    ]
+    df_filtered = df
 
     objectif_total = objectifs["Objectifs Total"].sum()
 
@@ -103,67 +122,53 @@ if uploaded_file:
         return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
     # ---------------- DASHBOARD ----------------
-    if page == "📊 Dashboard":
+    if page == "Dashboard":
 
-        st.title("📊 Dashboard")
+        total = len(df_filtered)
+        taux = total / objectif_total if objectif_total else 0
 
-        total_sales = len(df_filtered)
-        taux_global = total_sales / objectif_total if objectif_total else 0
+        c1, c2 = st.columns(2)
 
-        col1, col2 = st.columns(2)
+        with c1:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">Ventes</div>
+                <div class="metric-value">{total}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        col1.metric("Ventes", total_sales)
-        col2.metric("Progression", f"{taux_global:.0%}")
+        with c2:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-label">Progression</div>
+                <div class="metric-value">{taux:.0%}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("---")
+        st.markdown("## 🎯 Performance détaillée")
 
-        st.subheader("🎯 Performance détaillée")
+        heures = st.number_input("Heures", value=185.0)
+        agent = st.selectbox("Agent", df_filtered["agent"].unique())
 
-        heures = st.number_input("Heures planifiées", value=185.0)
-        agent_select = st.selectbox("Agent", df_filtered["agent"].unique())
-
-        df_agent = df_filtered[df_filtered["agent"] == agent_select]
-
-        col1, col2, col3 = st.columns([2, 4, 4])
-        col1.markdown("**Fournisseur**")
-        col2.markdown("**⚡ Elec**")
-        col3.markdown("**🔥 Gaz**")
+        df_agent = df_filtered[df_filtered["agent"] == agent]
 
         for fournisseur in objectifs["Fournisseur"].dropna().unique():
 
             df_f = df_agent[df_agent["get_provider"].str.lower() == fournisseur.lower()]
             obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
 
-            ventes_elec = len(df_f[df_f["energie"].str.lower() == "elec"])
-            ventes_gaz = len(df_f[df_f["energie"].str.lower().isin(["gaz", "gas"])])
+            ventes = len(df_f)
 
-            obj_elec = math.ceil(
-                heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total)
-            ) if objectif_total else 0
+            obj = math.ceil(obj_row["Objectifs Total"].sum() * (heures / 185))
 
-            obj_gaz = math.ceil(
-                heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total)
-            ) if objectif_total else 0
+            p = ventes / obj if obj else 0
 
-            p_elec = ventes_elec / obj_elec if obj_elec else 0
-            p_gaz = ventes_gaz / obj_gaz if obj_gaz else 0
-
-            col1, col2, col3 = st.columns([2, 4, 4])
-
-            col1.write(f"**{fournisseur}**")
-
-            with col2:
-                st.caption(f"{emoji(p_elec)} {ventes_elec}/{obj_elec} ({p_elec:.0%})")
-                st.progress(min(p_elec, 1.0))
-
-            with col3:
-                st.caption(f"{emoji(p_gaz)} {ventes_gaz}/{obj_gaz} ({p_gaz:.0%})")
-                st.progress(min(p_gaz, 1.0))
+            st.markdown(f"**{fournisseur}**")
+            st.caption(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
+            st.progress(min(p,1.0))
 
     # ---------------- AGENTS ----------------
-    elif page == "👤 Performance Agents":
-
-        st.title("👤 Performance Agents")
+    elif page == "Agents":
 
         ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
 
@@ -172,37 +177,26 @@ if uploaded_file:
         ventes_agent["taux"] = ventes_agent["ventes"] / objectif_agent
         ventes_agent = ventes_agent.sort_values("taux", ascending=False)
 
-        for _, row in ventes_agent.iterrows():
-
-            col1, col2 = st.columns([3, 5])
-
-            with col1:
-                st.markdown(f"**{row['agent']}**")
-                st.caption(f"{emoji(row['taux'])} {row['ventes']}/{objectif_agent} ({row['taux']:.0%})")
-
-            with col2:
-                st.progress(min(row["taux"], 1.0))
+        for _, r in ventes_agent.iterrows():
+            st.markdown(f"**{r['agent']}**")
+            st.caption(f"{emoji(r['taux'])} {r['ventes']}/{objectif_agent}")
+            st.progress(min(r["taux"],1.0))
 
     # ---------------- OBJECTIFS ----------------
-    elif page == "🏢 Objectifs Globaux":
-
-        st.title("🏢 Objectifs Globaux")
+    elif page == "Objectifs":
 
         ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
-        for _, row in ventes_fournisseur.iterrows():
+        for _, r in ventes_fournisseur.iterrows():
 
-            fournisseur = row["get_provider"]
-            ventes = row["ventes"]
+            obj_row = objectifs[objectifs["Fournisseur"].str.lower() == r["get_provider"].lower()]
+            obj = obj_row["Objectifs Total"].sum()
 
-            obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
-            objectif_fournisseur = obj_row["Objectifs Total"].sum() if not obj_row.empty else 0
+            p = r["ventes"] / obj if obj else 0
 
-            taux = ventes / objectif_fournisseur if objectif_fournisseur else 0
-
-            st.markdown(f"**{fournisseur}**")
-            st.caption(f"{emoji(taux)} {ventes}/{int(objectif_fournisseur)} ({taux:.0%})")
-            st.progress(min(taux, 1.0))
+            st.markdown(f"**{r['get_provider']}**")
+            st.caption(f"{emoji(p)} {r['ventes']}/{int(obj)}")
+            st.progress(min(p,1.0))
 
 else:
-    st.info("Veuillez uploader un fichier Excel (admin uniquement)")
+    st.info("Ajoute un fichier (admin uniquement)")
