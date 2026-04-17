@@ -26,8 +26,6 @@ st.markdown("""
 <style>
 body {background-color: #F7F9FB;}
 
-h1, h2, h3 {color:#0F172A;}
-
 .card {
     background: white;
     padding: 20px;
@@ -38,10 +36,6 @@ h1, h2, h3 {color:#0F172A;}
 .kpi-title {font-size:13px;color:#64748B;}
 .kpi-value {font-size:30px;font-weight:bold;}
 .kpi-sub {font-size:14px;color:#22C55E;}
-
-.stProgress > div > div > div > div {
-    background: linear-gradient(90deg, #3B82F6, #06B6D4);
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -56,7 +50,7 @@ if uploaded_file:
     code = pd.read_excel(xls, "Code")
     objectifs = pd.read_excel(xls, "Objectifs")
 
-    # CLEAN
+    # ---------------- CLEAN ----------------
     df["responder"] = df["responder"].astype(str).str.strip().str.upper()
     code.iloc[:, 0] = code.iloc[:, 0].astype(str).str.strip().str.upper()
 
@@ -67,7 +61,6 @@ if uploaded_file:
     )
 
     df["agent"] = df["agent"].fillna("Inconnu")
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
     # ---------------- FILTRES ----------------
     st.sidebar.header("🔎 Filtres")
@@ -82,7 +75,10 @@ if uploaded_file:
 
     # ---------------- KPI ----------------
     total_sales = len(df_filtered)
+
+    # ✅ Objectif global EXACT (ta feuille)
     objectif_total = objectifs["Objectifs Total"].sum()
+
     taux_global = total_sales / objectif_total if objectif_total else 0
 
     col1, col2, col3 = st.columns(3)
@@ -97,7 +93,7 @@ if uploaded_file:
         """, unsafe_allow_html=True)
 
     kpi(col1, "Ventes", total_sales, taux_global)
-    kpi(col2, "Objectif", int(objectif_total), 1)
+    kpi(col2, "Objectif Global", int(objectif_total), 1)
     kpi(col3, "Progression", "", taux_global)
 
     st.markdown("---")
@@ -109,8 +105,6 @@ if uploaded_file:
     # ---------------- FOURNISSEURS ----------------
     st.subheader("🏢 Performance Fournisseurs")
 
-    objectif_global_185h = 185 * 0.75
-
     ventes_fournisseur = (
         df_filtered.groupby("get_provider")
         .size()
@@ -120,15 +114,14 @@ if uploaded_file:
     rows = []
 
     for _, row in ventes_fournisseur.iterrows():
+
         fournisseur = row["get_provider"]
         ventes = row["ventes"]
 
         obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
 
-        objectif_fournisseur = 0
-        if not obj_row.empty and objectif_total:
-            part = obj_row["Objectifs Total"].sum() / objectif_total
-            objectif_fournisseur = objectif_global_185h * part
+        # ✅ OBJECTIF DIRECT DEPUIS EXCEL
+        objectif_fournisseur = obj_row["Objectifs Total"].sum() if not obj_row.empty else 0
 
         taux = ventes / objectif_fournisseur if objectif_fournisseur else 0
 
@@ -137,28 +130,13 @@ if uploaded_file:
     rows = sorted(rows, key=lambda x: x[3], reverse=True)
 
     for f, v, obj, t in rows:
-
-        col1, col2 = st.columns([6, 1])
-
-        with col1:
-            st.markdown(f"""
-            <div style="display:flex; align-items:center;">
-                <div style="flex-grow:1;">
-                    <b>{f}</b><br>
-                    <span style="font-size:12px;color:gray;">
-                    {v} / {int(obj)} ({t:.0%})
-                    </span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            st.progress(min(t, 1.0))
-
-        with col2:
-            st.write(emoji(t))
+        st.markdown(f"**{f}**")
+        st.caption(f"{emoji(t)} {v}/{int(obj)} ({t:.0%})")
+        st.progress(min(t, 1.0))
 
     st.markdown("---")
 
-    # ---------------- AGENTS COMPACT ----------------
+    # ---------------- AGENTS (ULTRA COMPACT FIX HTML) ----------------
     st.subheader("👤 Performance Agents")
 
     ventes_agent = (
@@ -179,32 +157,42 @@ if uploaded_file:
 
     rows = sorted(rows, key=lambda x: x[3], reverse=True)
 
+    html = ""
+
     for a, v, obj, t in rows:
 
-        st.markdown(f"""
-        <div style="
-            display:flex;
-            align-items:center;
-            margin-bottom:6px;
-            gap:10px;
-        ">
-            <div style="width:140px;">
-                <b>{a}</b>
+        percent = min(int(t * 100), 100)
+
+        html += f"""
+        <div style="display:flex; align-items:center; margin-bottom:8px; gap:10px;">
+            
+            <div style="width:160px; font-weight:600;">
+                {a}
             </div>
 
             <div style="flex-grow:1;">
-        """, unsafe_allow_html=True)
-
-        st.progress(min(t, 1.0))
-
-        st.markdown(f"""
+                <div style="
+                    background:#E5E7EB;
+                    border-radius:10px;
+                    height:10px;
+                ">
+                    <div style="
+                        width:{percent}%;
+                        background:linear-gradient(90deg,#3B82F6,#06B6D4);
+                        height:100%;
+                        border-radius:10px;
+                    "></div>
+                </div>
             </div>
 
             <div style="width:140px; text-align:right; font-size:12px;">
                 {emoji(t)} {v}/{int(obj)} ({t:.0%})
             </div>
+
         </div>
-        """, unsafe_allow_html=True)
+        """
+
+    st.markdown(html, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -223,10 +211,7 @@ if uploaded_file:
 
         obj_row = objectifs[objectifs["Fournisseur"].str.lower() == fournisseur.lower()]
 
-        objectif = 0
-        if not obj_row.empty and objectif_total:
-            part = obj_row["Objectifs Total"].sum() / objectif_total
-            objectif = heures * 0.75 * part
+        objectif = obj_row["Objectifs Total"].sum() * (heures / 185) if not obj_row.empty else 0
 
         taux = ventes / objectif if objectif else 0
 
