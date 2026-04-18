@@ -26,23 +26,9 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] * {
     color:#0F172A !important;
 }
-
-[data-baseweb="tag"] {
-    background-color:#E0F2FE !important;
-    color:#0369A1 !important;
-    border-radius:8px;
-}
-
-.stButton > button {
-    background-color:#0F8BC6;
-    color:white;
-    border:none;
-    border-radius:8px;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- HEADER ----------------
 st.markdown('<div class="header">HelloWatt</div>', unsafe_allow_html=True)
 st.markdown('<div class="subheader">Dashboard de performance commerciale</div>', unsafe_allow_html=True)
 st.markdown("---")
@@ -51,7 +37,6 @@ st.markdown("---")
 password = st.sidebar.text_input("🔐 Admin", type="password")
 is_admin = password == "hello123"
 
-# ---------------- UPLOAD ----------------
 uploaded_file = None
 
 if is_admin:
@@ -85,7 +70,6 @@ if uploaded_file:
     code = pd.read_excel(xls, "Code")
     objectifs = pd.read_excel(xls, "Objectifs")
 
-    # -------- CLEAN --------
     def clean_text(col):
         return (
             col.astype(str)
@@ -136,11 +120,12 @@ if uploaded_file:
         ]
 
     objectif_total = objectifs["Objectifs Total"].sum()
+    objectif_elec_total = objectifs["Objectif Elec"].sum()
+    objectif_gaz_total = objectifs["Objectif Gaz"].sum()
 
     def emoji(p):
         return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
-    # ✅ ARRONDI TYPE EXCEL
     def round_excel(x):
         return int(x + 0.5 + 1e-9)
 
@@ -148,6 +133,19 @@ if uploaded_file:
     if page == "📊 Dashboard":
 
         st.title("🏢 Objectifs Globaux")
+
+        ventes_elec = len(df_filtered[df_filtered["energie"] == "ELEC"])
+        ventes_gaz = len(df_filtered[df_filtered["energie"].isin(["GAZ","GAS"])])
+        ventes_total = ventes_elec + ventes_gaz
+
+        # KPI
+        c1, c2, c3 = st.columns(3)
+
+        c1.metric("⚡ Elec", f"{ventes_elec}/{objectif_elec_total}", f"{ventes_elec/objectif_elec_total:.0%}")
+        c2.metric("🔥 Gaz", f"{ventes_gaz}/{objectif_gaz_total}", f"{ventes_gaz/objectif_gaz_total:.0%}")
+        c3.metric("🏆 Total", f"{ventes_total}/{objectif_total}", f"{ventes_total/objectif_total:.0%}")
+
+        st.markdown("---")
 
         ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
@@ -163,21 +161,13 @@ if uploaded_file:
 
         for _, r in df_obj.iterrows():
 
-            fournisseur = r["Fournisseur"]
-            ventes = int(r["ventes"])
-            obj = int(r["Objectifs Total"])
-            p = ventes / obj if obj else 0
+            p = r["ventes"] / r["Objectifs Total"] if r["Objectifs Total"] else 0
 
             col1, col2, col3 = st.columns([3,6,2])
 
-            with col1:
-                st.markdown(f"**{fournisseur}**")
-
-            with col2:
-                st.progress(min(p,1.0))
-
-            with col3:
-                st.markdown(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
+            col1.markdown(f"**{r['Fournisseur']}**")
+            col2.progress(min(p,1.0))
+            col3.markdown(f"{emoji(p)} {int(r['ventes'])}/{int(r['Objectifs Total'])} ({p:.0%})")
 
     # ---------------- AGENTS ----------------
     elif page == "👤 Agents":
@@ -185,7 +175,6 @@ if uploaded_file:
         st.title("👤 Performance Agents")
 
         ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
-
         objectif_agent = math.ceil(185 * 0.75)
 
         ventes_agent["taux"] = ventes_agent["ventes"] / objectif_agent
@@ -193,20 +182,11 @@ if uploaded_file:
 
         for _, r in ventes_agent.iterrows():
 
-            agent = r["agent"]
-            ventes = int(r["ventes"])
-            taux = r["taux"]
-
             col1, col2, col3 = st.columns([3,6,2])
 
-            with col1:
-                st.markdown(f"**{agent}**")
-
-            with col2:
-                st.progress(min(taux,1.0))
-
-            with col3:
-                st.markdown(f"{emoji(taux)} {ventes}/{objectif_agent} ({taux:.0%})")
+            col1.markdown(f"**{r['agent']}**")
+            col2.progress(min(r["taux"],1.0))
+            col3.markdown(f"{emoji(r['taux'])} {r['ventes']}/{objectif_agent} ({r['taux']:.0%})")
 
     # ---------------- OBJECTIFS ----------------
     elif page == "🎯 Objectifs":
@@ -218,37 +198,38 @@ if uploaded_file:
 
         df_agent = df_filtered[df_filtered["agent"] == agent]
 
-        col1, col2, col3 = st.columns([2,4,4])
-        col1.markdown("**Fournisseur**")
-        col2.markdown("**⚡ Elec**")
-        col3.markdown("**🔥 Gaz**")
+        objectif_agent = round_excel(heures * 0.75)
+        ventes_total_agent = len(df_agent)
+
+        taux_agent = ventes_total_agent / objectif_agent if objectif_agent else 0
+
+        # 🔥 BARRE GLOBALE AGENT
+        col1, col2, col3 = st.columns([3,6,2])
+        col1.markdown(f"**{agent}**")
+        col2.progress(min(taux_agent,1.0))
+        col3.markdown(f"{emoji(taux_agent)} {ventes_total_agent}/{objectif_agent} ({taux_agent:.0%})")
+
+        st.markdown("---")
 
         for fournisseur in objectifs["Fournisseur"].dropna().unique():
 
             df_f = df_agent[df_agent["get_provider"] == fournisseur]
             obj_row = objectifs[objectifs["Fournisseur"] == fournisseur]
 
-            ventes_elec = len(df_f[df_f["energie"] == "ELEC"])
-            ventes_gaz = len(df_f[df_f["energie"].isin(["GAZ","GAS"])])
+            ventes = len(df_f)
 
-            # ✅ MODIFICATION ICI (arrondi Excel)
-            obj_elec = round_excel(heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total))
-            obj_gaz = round_excel(heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total))
+            obj = round_excel(
+                heures * 0.75 *
+                (obj_row["Objectifs Total"].sum() / objectif_total)
+            )
 
-            p_elec = ventes_elec / obj_elec if obj_elec else 0
-            p_gaz = ventes_gaz / obj_gaz if obj_gaz else 0
+            p = ventes / obj if obj else 0
 
-            col1, col2, col3 = st.columns([2,4,4])
+            col1, col2, col3 = st.columns([3,6,2])
 
-            col1.write(f"**{fournisseur}**")
-
-            with col2:
-                st.caption(f"{emoji(p_elec)} {ventes_elec}/{obj_elec} ({p_elec:.0%})")
-                st.progress(min(p_elec,1.0))
-
-            with col3:
-                st.caption(f"{emoji(p_gaz)} {ventes_gaz}/{obj_gaz} ({p_gaz:.0%})")
-                st.progress(min(p_gaz,1.0))
+            col1.markdown(f"**{fournisseur}**")
+            col2.progress(min(p,1.0))
+            col3.markdown(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
 
 else:
     st.info("🔒 Ajoute un fichier (admin uniquement)")
