@@ -140,6 +140,10 @@ if uploaded_file:
     def emoji(p):
         return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
+    # ✅ ARRONDI TYPE EXCEL
+    def round_excel(x):
+        return int(x + 0.5 + 1e-9)
+
     # ---------------- DASHBOARD ----------------
     if page == "📊 Dashboard":
 
@@ -227,8 +231,9 @@ if uploaded_file:
             ventes_elec = len(df_f[df_f["energie"] == "ELEC"])
             ventes_gaz = len(df_f[df_f["energie"].isin(["GAZ","GAS"])])
 
-            obj_elec = math.ceil(heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total))
-            obj_gaz = math.ceil(heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total))
+            # ✅ MODIFICATION ICI (arrondi Excel)
+            obj_elec = round_excel(heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total))
+            obj_gaz = round_excel(heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total))
 
             p_elec = ventes_elec / obj_elec if obj_elec else 0
             p_gaz = ventes_gaz / obj_gaz if obj_gaz else 0
