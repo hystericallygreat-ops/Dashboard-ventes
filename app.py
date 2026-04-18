@@ -7,32 +7,69 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-SAVE_PATH = "last_uploaded.xlsx"
-
-# ---------------- STYLE ----------------
+# ---------------- CSS (RESTAURÉ) ----------------
 st.markdown("""
 <style>
-.block-container {max-width:100%; padding-top:2rem;}
 
-.hero {
-    background: linear-gradient(135deg,#E0F2FE,#EDF7FA);
-    padding:20px;
-    border-radius:14px;
-    margin-bottom:10px;
+/* SIDEBAR */
+section[data-testid="stSidebar"] {
+    background-color: #EDF7FA;
+    border-right: 1px solid #E2E8F0;
 }
 
+/* TITRE FILTRES */
+section[data-testid="stSidebar"] h3 {
+    color: #0F8BC6;
+    font-weight: 600;
+}
+
+/* INPUTS */
+section[data-testid="stSidebar"] .stMultiSelect div,
+section[data-testid="stSidebar"] .stDateInput div,
+section[data-testid="stSidebar"] .stSelectbox div {
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+}
+
+/* LABELS */
+section[data-testid="stSidebar"] label {
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* TAGS */
+[data-baseweb="tag"] {
+    background-color: #E0F2FE !important;
+    color: #0369A1 !important;
+    border-radius: 6px !important;
+}
+
+/* BOUTON SUPPRIMER */
+.stButton>button {
+    background-color: #EF4444;
+    color: white;
+    border-radius: 8px;
+    border: none;
+}
+
+.stButton>button:hover {
+    background-color: #DC2626;
+    color: white;
+}
+
+/* PROGRESS BAR */
 .stProgress > div > div > div > div {
-    background-color:#0F8BC6;
+    background-color: #0F8BC6;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
+SAVE_PATH = "last_uploaded.xlsx"
+
 # ---------------- HEADER ----------------
-st.markdown("""
-<div class="hero">
-<h2 style="color:#0F8BC6;margin:0;">HelloWatt</h2>
-</div>
-""", unsafe_allow_html=True)
+st.title("HelloWatt - Dashboard")
 
 # ---------------- AUTH ----------------
 password = st.sidebar.text_input("🔐 Admin", type="password")
@@ -126,7 +163,7 @@ if uploaded_file:
     # ================= DASHBOARD =================
     if page=="📊 Dashboard":
 
-        st.title("🏢 Objectifs Globaux")
+        st.header("🏢 Objectifs Globaux")
 
         ventes = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
@@ -147,7 +184,7 @@ if uploaded_file:
     # ================= AGENTS =================
     elif page=="👤 Agents":
 
-        st.title("👤 Performance Agents")
+        st.header("👤 Performance Agents")
 
         jours = get_working_days()
         obj_agent = math.ceil(185*0.75)
@@ -169,7 +206,7 @@ if uploaded_file:
     # ================= OBJECTIFS =================
     elif page=="🎯 Objectifs":
 
-        st.title("🎯 Performance détaillée")
+        st.header("🎯 Performance détaillée")
 
         heures = st.number_input("Heures",value=185.0)
         agent = st.selectbox("Agent", df_filtered["agent"].unique())
@@ -180,7 +217,6 @@ if uploaded_file:
         ventes_total = len(df_agent)
         taux = ventes_total/obj_agent if obj_agent else 0
 
-        # GLOBAL
         c1,c2,c3 = st.columns([3,6,2])
         c1.write(agent)
         c2.progress(min(taux,1.0))
@@ -188,7 +224,6 @@ if uploaded_file:
 
         special=["HOMESERVE","FREE"]
 
-        # CLASSIQUES
         for f in objectifs["Fournisseur"].dropna().unique():
 
             if f in special:
@@ -206,7 +241,6 @@ if uploaded_file:
             c2.progress(min(p,1.0))
             c3.write(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
 
-        # SPECIAUX
         st.markdown("### ⭐ Fournisseurs spécifiques")
 
         total_unique = df_agent[USER_COL].nunique()
