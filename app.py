@@ -7,33 +7,19 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS FIX SAFE ----------------
+# ---------------- CSS SAFE ----------------
 st.markdown("""
 <style>
 
-/* SIDEBAR CLEAN */
+/* SIDEBAR */
 section[data-testid="stSidebar"] {
-    background-color: #EDF7FA;
-    border-right: 1px solid #E2E8F0;
+    background-color: #E2E8F0;
 }
 
-/* LABEL */
-section[data-testid="stSidebar"] label {
-    color: #475569;
-    font-weight: 500;
-}
-
-/* TAGS FIX (IMPORTANT) */
+/* TAGS */
 [data-baseweb="tag"] {
-    background-color: #E0F2FE !important;
-    color: #0369A1 !important;
-    border-radius: 6px !important;
-    max-width: 100% !important;
-}
-
-/* Empêche le bloc gris cassé */
-[data-baseweb="select"] {
-    overflow: hidden !important;
+    background-color: #BFDBFE !important;
+    color: #1E3A8A !important;
 }
 
 /* PROGRESS */
@@ -41,13 +27,13 @@ section[data-testid="stSidebar"] label {
     background-color:#0F8BC6;
 }
 
-/* BLOCS VISUELS */
+/* ESPACE ENTRE BLOCS */
 .block {
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 15px;
+    padding: 12px;
+    border-radius: 10px;
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
     margin-bottom: 15px;
-    background: white;
 }
 
 </style>
@@ -146,35 +132,75 @@ if uploaded_file:
 
     objectif_total = objectifs["Objectifs Total"].sum()
 
+    # ================= DASHBOARD =================
+    if page=="📊 Dashboard":
+
+        st.header("🏢 Objectifs Globaux")
+
+        ventes = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
+
+        df_obj = objectifs.merge(
+            ventes,left_on="Fournisseur",right_on="get_provider",how="left"
+        ).fillna(0)
+
+        df_obj = df_obj.sort_values("Objectifs Total",ascending=False)
+
+        for _,r in df_obj.iterrows():
+            p = r["ventes"]/r["Objectifs Total"] if r["Objectifs Total"] else 0
+
+            c1,c2,c3 = st.columns([3,6,2])
+            c1.write(r["Fournisseur"])
+            c2.progress(min(p,1.0))
+            c3.write(f"{emoji(p)} {int(r['ventes'])}/{int(r['Objectifs Total'])} ({p:.0%})")
+
+    # ================= AGENTS =================
+    elif page=="👤 Agents":
+
+        st.header("👤 Performance Agents")
+
+        jours = get_working_days()
+        obj_agent = math.ceil(185*0.75)
+
+        ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
+        ventes_agent["taux"]=ventes_agent["ventes"]/obj_agent
+        ventes_agent["kpi"]=ventes_agent["ventes"]/jours if jours else 0
+
+        ventes_agent = ventes_agent.sort_values("taux",ascending=False)
+
+        for _,r in ventes_agent.iterrows():
+
+            c1,c2,c3,c4 = st.columns([3,5,2,2])
+            c1.write(r["agent"])
+            c2.progress(min(r["taux"],1.0))
+            c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
+            c4.write(f"📅 {round(r['kpi'],1)}/J")
+
     # ================= OBJECTIFS =================
-    if page=="🎯 Objectifs":
+    elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
 
-        # -------- BLOCK 1 : AGENT --------
-        st.markdown('<div class="block">', unsafe_allow_html=True)
+        # -------- BLOC 1 --------
+        with st.container():
+            st.markdown("### 👤 Agent")
 
-        colA, colB = st.columns(2)
-        heures = colA.number_input("Heures", value=185.0)
-        agent = colB.selectbox("Agent", df_filtered["agent"].unique())
+            colA, colB = st.columns(2)
+            heures = colA.number_input("Heures", value=185.0)
+            agent = colB.selectbox("Agent", df_filtered["agent"].unique())
 
-        df_agent = df_filtered[df_filtered["agent"]==agent]
+            df_agent = df_filtered[df_filtered["agent"]==agent]
 
-        obj_agent = round_excel(heures*0.75)
-        ventes_total = len(df_agent)
-        taux = ventes_total/obj_agent if obj_agent else 0
+            obj_agent = round_excel(heures*0.75)
+            ventes_total = len(df_agent)
+            taux = ventes_total/obj_agent if obj_agent else 0
 
-        c1,c2,c3 = st.columns([3,6,2])
-        c1.write(agent)
-        c2.progress(min(taux,1.0))
-        c3.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
+            c1,c2,c3 = st.columns([3,6,2])
+            c1.write(agent)
+            c2.progress(min(taux,1.0))
+            c3.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # -------- BLOCK 2 : FOURNISSEURS --------
-        st.markdown('<div class="block">', unsafe_allow_html=True)
-
-        st.subheader("⚡ Ventes Fournisseurs")
+        # -------- BLOC 2 --------
+        st.markdown("### ⚡ Ventes Fournisseurs")
 
         special=["HOMESERVE","FREE"]
 
@@ -195,12 +221,8 @@ if uploaded_file:
             c2.progress(min(p,1.0))
             c3.write(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # -------- BLOCK 3 : ADDITIONNEL --------
-        st.markdown('<div class="block">', unsafe_allow_html=True)
-
-        st.subheader("⭐ Ventes Additionnelles")
+        # -------- BLOC 3 --------
+        st.markdown("### ⭐ Ventes Additionnelles")
 
         total_unique = df_agent[USER_COL].nunique()
 
@@ -216,8 +238,6 @@ if uploaded_file:
             c1.write(sp)
             c2.progress(min(p_sp,1.0))
             c3.write(f"{emoji(p_sp)} {ventes_sp}/{obj_sp} ({p_sp:.0%})")
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     st.info("🔒 Ajoute un fichier (admin)")
