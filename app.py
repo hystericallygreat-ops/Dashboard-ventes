@@ -13,7 +13,6 @@ SAVE_PATH = "last_uploaded.xlsx"
 st.markdown("""
 <style>
 
-/* Responsive largeur dynamique */
 .block-container {
     max-width: 100% !important;
     padding-top: 3rem;
@@ -35,12 +34,22 @@ st.markdown("""
     box-shadow: 0 3px 10px rgba(0,0,0,0.04);
 }
 
-/* AGENT CARD */
+/* AGENT CARD (PLUS VISIBLE) */
 .agent-card {
     background: white;
+    padding: 16px;
+    border-radius: 12px;
+    border: 2px solid #0F8BC6;
+    box-shadow: 0 6px 16px rgba(15,139,198,0.2);
+    margin-bottom: 15px;
+}
+
+/* SPECIAL KPI CARD */
+.special-card {
+    background: #F0F9FF;
     padding: 14px;
     border-radius: 10px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+    border: 2px solid #0F8BC6;
     margin-bottom: 10px;
 }
 
@@ -147,6 +156,8 @@ if uploaded_file:
 
     objectifs["Fournisseur"] = clean_text(objectifs["Fournisseur"])
 
+    USER_COL = "user id"
+
     # ---------------- FILTRES ----------------
     st.sidebar.markdown("### 🔎 Filtres")
 
@@ -171,71 +182,9 @@ if uploaded_file:
         ]
 
     objectif_total = objectifs["Objectifs Total"].sum()
-    objectif_elec_total = objectifs["Objectif Elec"].sum()
-    objectif_gaz_total = objectifs["Objectif Gaz"].sum()
-
-    # ---------------- DASHBOARD ----------------
-    if page == "📊 Dashboard":
-
-        st.title("🏢 Objectifs Globaux")
-
-        ventes_elec = len(df_filtered[df_filtered["energie"] == "ELEC"])
-        ventes_gaz = len(df_filtered[df_filtered["energie"].isin(["GAZ","GAS"])])
-        ventes_total = ventes_elec + ventes_gaz
-
-        c1, c2, c3 = st.columns(3)
-
-        c1.metric("⚡ Elec", f"{ventes_elec}/{objectif_elec_total}", f"{ventes_elec/objectif_elec_total:.0%}")
-        c2.metric("🔥 Gaz", f"{ventes_gaz}/{objectif_gaz_total}", f"{ventes_gaz/objectif_gaz_total:.0%}")
-        c3.metric("🏆 Total", f"{ventes_total}/{objectif_total}", f"{ventes_total/objectif_total:.0%}")
-
-        ventes_fournisseur = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
-
-        df_obj = objectifs.merge(
-            ventes_fournisseur,
-            left_on="Fournisseur",
-            right_on="get_provider",
-            how="left"
-        )
-
-        df_obj["ventes"] = df_obj["ventes"].fillna(0)
-        df_obj = df_obj.sort_values("Objectifs Total", ascending=False)
-
-        for _, r in df_obj.iterrows():
-            p = r["ventes"] / r["Objectifs Total"] if r["Objectifs Total"] else 0
-
-            col1, col2, col3 = st.columns([3,6,2])
-            col1.markdown(f"**{r['Fournisseur']}**")
-            col2.progress(min(p,1.0))
-            col3.markdown(f"{emoji(p)} {int(r['ventes'])}/{int(r['Objectifs Total'])} ({p:.0%})")
-
-    # ---------------- AGENTS ----------------
-    elif page == "👤 Agents":
-
-        st.title("👤 Performance Agents")
-
-        ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
-        objectif_agent = math.ceil(185 * 0.75)
-        jours_travailles = get_working_days()
-
-        ventes_agent["taux"] = ventes_agent["ventes"] / objectif_agent
-        ventes_agent["kpi_jour"] = ventes_agent["ventes"] / jours_travailles if jours_travailles else 0
-
-        ventes_agent = ventes_agent.sort_values("taux", ascending=False)
-
-        for _, r in ventes_agent.iterrows():
-
-            ventes_jour = round(r["kpi_jour"], 1)
-
-            col1, col2, col3, col4 = st.columns([3,5,2,2])
-
-            col1.markdown(f"**{r['agent']}**")
-            col2.progress(min(r["taux"],1.0))
-            col3.markdown(f"{emoji(r['taux'])} {r['ventes']}/{objectif_agent} ({r['taux']:.0%})")
-            col4.markdown(f"📅 {ventes_jour}/J")
 
     # ---------------- OBJECTIFS ----------------
-    elif page == "🎯 Objectifs":
+    if page == "🎯 Objectifs":
 
         st.title("🎯 Performance détaillée")
 
@@ -244,6 +193,7 @@ if uploaded_file:
 
         df_agent = df_filtered[df_filtered["agent"] == agent]
 
+        # -------- KPI GLOBAL AGENT --------
         objectif_agent = round_excel(heures * 0.75)
         ventes_total_agent = len(df_agent)
         taux_agent = ventes_total_agent / objectif_agent if objectif_agent else 0
@@ -257,7 +207,13 @@ if uploaded_file:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # -------- FOURNISSEURS CLASSIQUES (SANS HOMESERVE / FREE) --------
+        special_providers = ["HOMESERVE", "FREE"]
+
         for fournisseur in objectifs["Fournisseur"].dropna().unique():
+
+            if fournisseur in special_providers:
+                continue
 
             df_f = df_agent[df_agent["get_provider"] == fournisseur]
             obj_row = objectifs[objectifs["Fournisseur"] == fournisseur]
@@ -276,6 +232,30 @@ if uploaded_file:
             col1.markdown(f"**{fournisseur}**")
             col2.progress(min(p,1.0))
             col3.markdown(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
+
+        # -------- FOURNISSEURS SPÉCIAUX --------
+        st.markdown("### ⭐ Fournisseurs spécifiques")
+
+        total_unique = df_agent[USER_COL].nunique()
+
+        cols = st.columns(2)
+
+        for i, sp in enumerate(special_providers):
+
+            df_sp = df_agent[df_agent["get_provider"] == sp]
+            ventes_sp = df_sp[USER_COL].nunique()
+
+            obj_sp = max(1, round_excel(total_unique * 0.05))
+            p_sp = ventes_sp / obj_sp if obj_sp else 0
+
+            with cols[i]:
+                st.markdown('<div class="special-card">', unsafe_allow_html=True)
+
+                st.markdown(f"**{sp}**")
+                st.progress(min(p_sp,1.0))
+                st.markdown(f"{emoji(p_sp)} {ventes_sp}/{obj_sp} ({p_sp:.0%})")
+
+                st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     st.info("🔒 Ajoute un fichier (admin uniquement)")
