@@ -7,39 +7,33 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS SAFE ----------------
 st.markdown("""
 <style>
 
-/* SIDEBAR */
 section[data-testid="stSidebar"] {
     background-color: #E2E8F0;
 }
 
-/* TAGS */
 [data-baseweb="tag"] {
     background-color: #BFDBFE !important;
     color: #1E3A8A !important;
 }
 
-/* PROGRESS */
 .stProgress > div > div > div > div {
     background-color:#0F8BC6;
 }
 
-/* BLOCS */
 .block {
-    padding: 12px;
+    padding: 10px;
     border-radius: 10px;
     background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
-/* ESPACE GLOBAL */
 h1, h2, h3 {
-    margin-top: 10px !important;
-    margin-bottom: 10px !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
 }
 
 </style>
@@ -47,17 +41,13 @@ h1, h2, h3 {
 
 SAVE_PATH = "last_uploaded.xlsx"
 
-# ---------------- HEADER ----------------
 st.title("HelloWatt - Dashboard")
-st.markdown("<br>", unsafe_allow_html=True)  # espace léger
+st.markdown("<br>", unsafe_allow_html=True)
 
-# ---------------- NAV (RESTE EN HAUT) ----------------
 page = st.sidebar.radio("Navigation", ["📊 Dashboard","👤 Agents","🎯 Objectifs"])
 
 uploaded_file = None
-is_admin = False
 
-# ---------------- UTILS ----------------
 def clean_text(col):
     return col.astype(str).str.strip().str.replace('"','').str.replace("'","").str.upper()
 
@@ -74,7 +64,6 @@ def get_working_days():
     days = pd.date_range(start, today)
     return len([d for d in days if d.weekday()<5 and d.date() not in fr])
 
-# ---------------- APP ----------------
 if os.path.exists(SAVE_PATH):
     uploaded_file = SAVE_PATH
 
@@ -102,7 +91,6 @@ if uploaded_file:
 
     USER_COL="user id"
 
-    # ---------------- FILTRES ----------------
     st.sidebar.markdown("### 🔎 Filtres")
 
     agents = st.sidebar.multiselect("Agents", df["agent"].unique(), df["agent"].unique())
@@ -112,23 +100,6 @@ if uploaded_file:
     min_d,max_d=df["date"].min(),df["date"].max()
     dates = st.sidebar.date_input("Période",[min_d,max_d])
 
-    # ---------------- ADMIN (DÉPLACÉ EN BAS) ----------------
-    st.sidebar.markdown("---")
-    password = st.sidebar.text_input("🔐 Admin", type="password")
-    is_admin = password == "hello123"
-
-    if is_admin:
-        uploaded_file_admin = st.sidebar.file_uploader("Uploader fichier Excel", type=["xlsx"])
-        if uploaded_file_admin:
-            with open(SAVE_PATH, "wb") as f:
-                f.write(uploaded_file_admin.getbuffer())
-
-        if os.path.exists(SAVE_PATH):
-            if st.sidebar.button("🗑 Supprimer"):
-                os.remove(SAVE_PATH)
-                st.rerun()
-
-    # ---------------- FILTRAGE ----------------
     df_filtered = df[
         df["agent"].isin(agents) &
         df["get_provider"].isin(fournisseurs) &
@@ -143,11 +114,9 @@ if uploaded_file:
 
     objectif_total = objectifs["Objectifs Total"].sum()
 
-    # ================= DASHBOARD =================
     if page=="📊 Dashboard":
 
         st.header("🏢 Objectifs Globaux")
-        st.markdown("<br>", unsafe_allow_html=True)  # espace ajouté
 
         ventes = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
@@ -161,19 +130,14 @@ if uploaded_file:
 
             p = r["ventes"]/r["Objectifs Total"] if r["Objectifs Total"] else 0
 
-            with st.container():
-                c1,c2,c3 = st.columns([3,6,2])
-                c1.write(r["Fournisseur"])
-                c2.progress(min(p,1.0))
-                c3.write(f"{emoji(p)} {int(r['ventes'])}/{int(r['Objectifs Total'])} ({p:.0%})")
+            c1,c2,c3 = st.columns([3,6,2])
+            c1.write(r["Fournisseur"])
+            c2.progress(min(p,1.0))
+            c3.write(f"{emoji(p)} {int(r['ventes'])}/{int(r['Objectifs Total'])} ({p:.0%})")
 
-            st.markdown("<br>", unsafe_allow_html=True)  # petit espace entre lignes
-
-    # ================= AGENTS =================
     elif page=="👤 Agents":
 
         st.header("👤 Performance Agents")
-        st.markdown("<br>", unsafe_allow_html=True)
 
         jours = get_working_days()
         obj_agent = math.ceil(185*0.75)
@@ -186,43 +150,54 @@ if uploaded_file:
 
         for _,r in ventes_agent.iterrows():
 
-            with st.container():
-                c1,c2,c3,c4 = st.columns([3,5,2,2])
-                c1.write(r["agent"])
-                c2.progress(min(r["taux"],1.0))
-                c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
-                c4.write(f"📅 {round(r['kpi'],1)}/J")
+            c1,c2,c3,c4 = st.columns([3,5,2,2])
+            c1.write(r["agent"])
+            c2.progress(min(r["taux"],1.0))
+            c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
+            c4.write(f"📅 {round(r['kpi'],1)}/J")
 
-            st.markdown("<br>", unsafe_allow_html=True)
-
-    # ================= OBJECTIFS =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
-        st.markdown("<br>", unsafe_allow_html=True)
 
-        # -------- BLOC 1 --------
-        with st.container():
-            st.markdown("### 👤 Agent")
+        colA, colB = st.columns(2)
+        heures = colA.number_input("Heures", value=185.0)
+        agent = colB.selectbox("Agent", df_filtered["agent"].unique())
 
-            colA, colB = st.columns(2)
-            heures = colA.number_input("Heures", value=185.0)
-            agent = colB.selectbox("Agent", df_filtered["agent"].unique())
+        df_agent = df_filtered[df_filtered["agent"]==agent]
 
-            df_agent = df_filtered[df_filtered["agent"]==agent]
+        obj_agent = round_excel(heures*0.75)
+        ventes_total = len(df_agent)
+        taux = ventes_total/obj_agent if obj_agent else 0
 
-            obj_agent = round_excel(heures*0.75)
-            ventes_total = len(df_agent)
-            taux = ventes_total/obj_agent if obj_agent else 0
+        elec = df_agent[df_agent["energie"]=="ELEC"].shape[0]
+        gaz = df_agent[df_agent["energie"]=="GAZ"].shape[0]
 
-            c1,c2,c3 = st.columns([3,6,2])
-            c1.write(agent)
-            c2.progress(min(taux,1.0))
-            c3.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
+        elec_obj = max(1, round(obj_agent*0.6))
+        gaz_obj = max(1, obj_agent - elec_obj)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        elec_p = elec/elec_obj if elec_obj else 0
+        gaz_p = gaz/gaz_obj if gaz_obj else 0
 
-        # -------- BLOC 2 --------
+        st.markdown("### 👤 Agent")
+
+        bar = "█"*int(min(taux,1)*10) + "-"*(10-int(min(taux,1)*10))
+
+        st.markdown(
+            f"""
+            <div class="block">
+            <b>{agent}</b><br><br>
+
+            ⚡({elec}/{elec_obj})  
+            🔥({gaz}/{gaz_obj})  
+            🎯({ventes_total}/{obj_agent}) ({taux:.0%})<br><br>
+
+            {bar}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
         st.markdown("### ⚡ Ventes Fournisseurs")
 
         special=["HOMESERVE","FREE"]
@@ -244,9 +219,6 @@ if uploaded_file:
             c2.progress(min(p,1.0))
             c3.write(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # -------- BLOC 3 --------
         st.markdown("### ⭐ Ventes Additionnelles")
 
         total_unique = df_agent[USER_COL].nunique()
