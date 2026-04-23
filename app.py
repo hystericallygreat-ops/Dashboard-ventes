@@ -29,12 +29,12 @@ section[data-testid="stSidebar"] {
     border-radius: 10px;
     background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 h1, h2, h3 {
-    margin-top: 10px !important;
-    margin-bottom: 10px !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
 }
 
 </style>
@@ -116,8 +116,6 @@ if uploaded_file:
             (df_filtered["date"]<=pd.to_datetime(dates[1]))
         ]
 
-    objectif_total = objectifs["Objectifs Total"].sum()
-
     # ================= DASHBOARD =================
     if page=="📊 Dashboard":
 
@@ -139,8 +137,11 @@ if uploaded_file:
             gaz = len(df_f[df_f["energie"]=="GAZ"])
             total = elec + gaz
 
-            obj = r["Objectifs Total"]
-            p = total/obj if obj else 0
+            obj_total = r["Objectifs Total"]
+            obj_elec = r["Objectifs ELEC"]
+            obj_gaz = r["Objectifs GAZ"]
+
+            p = total / obj_total if obj_total else 0
 
             c1,c2,c3 = st.columns([3,5,6])
 
@@ -149,9 +150,9 @@ if uploaded_file:
 
             c3.write(
                 f"{emoji(p)} "
-                f"⚡ {elec}/{max(1,int(obj*0.6))} "
-                f"🔥 {gaz}/{max(1,int(obj*0.4))} "
-                f"🎯 {total}/{int(obj)} ({p:.0%})"
+                f"⚡ {elec}/{obj_elec} "
+                f"🔥 {gaz}/{obj_gaz} "
+                f"🎯 {total}/{obj_total} ({p:.0%})"
             )
 
     # ================= AGENTS =================
@@ -182,9 +183,6 @@ if uploaded_file:
 
         st.header("🎯 Performance détaillée")
 
-        # -------- AGENT --------
-        st.markdown("### 👤 Agent")
-
         colA, colB = st.columns(2)
         heures = colA.number_input("Heures", value=185.0)
         agent = colB.selectbox("Agent", df_filtered["agent"].unique())
@@ -193,76 +191,32 @@ if uploaded_file:
 
         df_agent = df_filtered[df_filtered["agent"]==agent]
 
-        obj_agent = round_excel(heures*0.75)
-        ventes_total = len(df_agent)
-        taux = ventes_total/obj_agent if obj_agent else 0
+        obj_total = round_excel(heures*0.75)
+
+        obj_elec = objectifs["Objectifs ELEC"].sum()
+        obj_gaz = objectifs["Objectifs GAZ"].sum()
 
         elec = len(df_agent[df_agent["energie"]=="ELEC"])
         gaz = len(df_agent[df_agent["energie"]=="GAZ"])
+        total = elec + gaz
+
+        taux = total / obj_total if obj_total else 0
 
         st.markdown('<div class="block">', unsafe_allow_html=True)
 
         c1,c2,c3 = st.columns([3,5,6])
+
         c1.write(agent)
         c2.progress(min(taux,1.0))
+
         c3.write(
             f"{emoji(taux)} "
-            f"⚡ {elec}/{max(1,int(obj_agent*0.6))} "
-            f"🔥 {gaz}/{max(1,int(obj_agent*0.4))} "
-            f"🎯 {ventes_total}/{obj_agent} ({taux:.0%})"
+            f"⚡ {elec}/{obj_elec} "
+            f"🔥 {gaz}/{obj_gaz} "
+            f"🎯 {total}/{obj_total} ({taux:.0%})"
         )
 
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # -------- FOURNISSEURS --------
-        st.markdown("### ⚡ Ventes Fournisseurs")
-
-        special = ["HOMESERVE","FREE"]
-
-        for f in objectifs["Fournisseur"].dropna().unique():
-
-            if f in special:
-                continue
-
-            df_f = df_agent[df_agent["get_provider"]==f]
-            obj_row = objectifs[objectifs["Fournisseur"]==f]
-
-            elec = len(df_f[df_f["energie"]=="ELEC"])
-            gaz = len(df_f[df_f["energie"]=="GAZ"])
-            total = elec + gaz
-
-            obj = round_excel(heures*0.75*(obj_row["Objectifs Total"].sum()/objectif_total))
-            p = total/obj if obj else 0
-
-            c1,c2,c3 = st.columns([3,5,6])
-
-            c1.write(f)
-            c2.progress(min(p,1.0))
-
-            c3.write(
-                f"{emoji(p)} "
-                f"⚡ {elec}/{max(1,int(obj*0.6))} "
-                f"🔥 {gaz}/{max(1,int(obj*0.4))} "
-                f"🎯 {total}/{obj} ({p:.0%})"
-            )
-
-        # -------- ADDITIONNEL --------
-        st.markdown("### ⭐ Ventes Additionnelles")
-
-        total_unique = df_agent[USER_COL].nunique()
-
-        for sp in special:
-
-            df_sp = df_agent[df_agent["get_provider"]==sp]
-
-            ventes_sp = df_sp[USER_COL].nunique()
-            obj_sp = max(1, round_excel(total_unique*0.05))
-            p_sp = ventes_sp/obj_sp if obj_sp else 0
-
-            c1,c2,c3 = st.columns([3,6,3])
-            c1.write(sp)
-            c2.progress(min(p_sp,1.0))
-            c3.write(f"{emoji(p_sp)} {ventes_sp}/{obj_sp} ({p_sp:.0%})")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     st.info("🔒 Ajoute un fichier (admin)")
