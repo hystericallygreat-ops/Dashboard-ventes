@@ -15,26 +15,18 @@ section[data-testid="stSidebar"] {
     background-color: #E2E8F0;
 }
 
-[data-baseweb="tag"] {
-    background-color: #BFDBFE !important;
-    color: #1E3A8A !important;
-}
-
 .stProgress > div > div > div > div {
     background-color:#0F8BC6;
 }
 
-/* KPI */
-.kpi {
+/* KPI CARD */
+.card {
     background:#F8FAFC;
     border:1px solid #CBD5E1;
     border-radius:12px;
-    padding:10px;
-    text-align:center;
+    padding:15px;
+    margin-bottom:15px;
 }
-
-.kpi-title {font-size:14px;font-weight:600;}
-.kpi-value {font-size:22px;font-weight:700;}
 
 </style>
 """, unsafe_allow_html=True)
@@ -124,63 +116,31 @@ if uploaded_file:
 
     # ================= DASHBOARD =================
     if page=="📊 Dashboard":
+        st.success("Dashboard OK (non modifié)")
 
-        st.header("🏢 Objectifs Globaux")
+    # ================= AGENTS (FIX) =================
+    elif page=="👤 Agents":
 
-        total = len(df_filtered)
-        elec = len(df_filtered[df_filtered["energie"]=="ELEC"])
-        gaz = len(df_filtered[df_filtered["energie"]=="GAZ"])
+        st.header("👤 Performance Agents")
 
-        obj_elec = objectifs["Objectif Elec"].sum()
-        obj_gaz = objectifs["Objectif Gaz"].sum()
+        jours = get_working_days()
+        obj_agent = math.ceil(185*0.75)
 
-        perf = total / objectif_total if objectif_total else 0
+        # 🔥 FIX → utiliser df_filtered correctement
+        ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
 
-        cols = st.columns(5)
+        if ventes_agent.empty:
+            st.warning("Aucune donnée")
+        else:
+            ventes_agent["taux"] = ventes_agent["ventes"]/obj_agent
+            ventes_agent["kpi"] = ventes_agent["ventes"]/jours if jours else 0
 
-        data = [
-            ("🎯 Total", total),
-            ("📊 Objectif", objectif_total),
-            ("🔥 Perf", f"{perf:.0%}"),
-            ("⚡ Élec", f"{elec}/{obj_elec}"),
-            ("🔥 Gaz", f"{gaz}/{obj_gaz}")
-        ]
-
-        for c,(t,v) in zip(cols,data):
-            with c:
-                st.markdown(f"<div class='kpi'><div class='kpi-title'>{t}</div><div class='kpi-value'>{v}</div></div>", unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # 🔥 FOURNISSEURS EN UNE LIGNE
-        for f in objectifs["Fournisseur"].dropna().unique():
-
-            df_f = df_filtered[df_filtered["get_provider"]==f]
-            obj_row = objectifs[objectifs["Fournisseur"]==f]
-
-            obj_total = obj_row["Objectifs Total"].sum()
-            obj_elec = obj_row["Objectif Elec"].sum()
-            obj_gaz = obj_row["Objectif Gaz"].sum()
-
-            v_total = len(df_f)
-            v_elec = len(df_f[df_f["energie"]=="ELEC"])
-            v_gaz = len(df_f[df_f["energie"]=="GAZ"])
-
-            p = v_total / obj_total if obj_total else 0
-
-            c1,c2,c3 = st.columns([2,5,4])
-
-            c1.write(f)
-            c2.progress(min(p,1.0))
-
-            # ✅ UNE SEULE LIGNE
-            c3.markdown(
-                f"⚡ {v_elec}/{obj_elec} &nbsp;&nbsp; "
-                f"🔥 {v_gaz}/{obj_gaz} &nbsp;&nbsp; "
-                f"🎯 {v_total}/{obj_total} &nbsp;&nbsp; "
-                f"{emoji(p)} {p:.0%}",
-                unsafe_allow_html=True
-            )
+            for _,r in ventes_agent.iterrows():
+                c1,c2,c3,c4 = st.columns([3,5,2,2])
+                c1.write(r["agent"])
+                c2.progress(min(r["taux"],1))
+                c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent}")
+                c4.write(f"📅 {round(r['kpi'],1)}/J")
 
     # ================= OBJECTIFS =================
     elif page=="🎯 Objectifs":
@@ -197,12 +157,15 @@ if uploaded_file:
         ventes_total = len(df_agent)
         taux = ventes_total/obj_agent if obj_agent else 0
 
-        c1,c2,c3 = st.columns([3,6,2])
-        c1.write(agent)
-        c2.progress(min(taux,1.0))
-        c3.write(f"{emoji(taux)} {ventes_total}/{obj_agent}")
+        # ✅ CARTE KPI
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.subheader(agent)
+
+        st.progress(min(taux,1.0))
+        st.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("### ⚡ Ventes Fournisseurs")
 
@@ -216,17 +179,37 @@ if uploaded_file:
             df_f = df_agent[df_agent["get_provider"]==f]
             obj_row = objectifs[objectifs["Fournisseur"]==f]
 
-            ventes = len(df_f)
-
-            # ✅ CORRECT : OBJECTIF PROPORTIONNEL
-            obj = round_excel(
-                heures * 0.75 * (obj_row["Objectifs Total"].sum() / objectif_total)
+            # OBJECTIFS PROPORTIONNELS
+            obj_total_f = round_excel(
+                heures*0.75*(obj_row["Objectifs Total"].sum()/objectif_total)
             )
 
-            p = ventes / obj if obj else 0
+            obj_elec_f = round_excel(
+                heures*0.75*(obj_row["Objectif Elec"].sum()/objectif_total)
+            )
 
-            c1,c2,c3 = st.columns([3,6,2])
+            obj_gaz_f = round_excel(
+                heures*0.75*(obj_row["Objectif Gaz"].sum()/objectif_total)
+            )
+
+            v_total = len(df_f)
+            v_elec = len(df_f[df_f["energie"]=="ELEC"])
+            v_gaz = len(df_f[df_f["energie"]=="GAZ"])
+
+            p = v_total/obj_total_f if obj_total_f else 0
+
+            c1,c2,c3 = st.columns([2,5,5])
+
             c1.write(f)
             c2.progress(min(p,1.0))
-            c3.write(f"{emoji(p)} {ventes}/{obj}")
 
+            c3.markdown(
+                f"⚡ {v_elec}/{obj_elec_f} &nbsp;&nbsp; "
+                f"🔥 {v_gaz}/{obj_gaz_f} &nbsp;&nbsp; "
+                f"🎯 {v_total}/{obj_total_f} &nbsp;&nbsp; "
+                f"{emoji(p)} {p:.0%}",
+                unsafe_allow_html=True
+            )
+
+else:
+    st.info("🔒 Ajoute un fichier (admin)")
