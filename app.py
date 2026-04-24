@@ -7,7 +7,7 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS ----------------
+# ---------------- CSS (RESTAURATION FILTRES + UI CLEAN) ----------------
 st.markdown("""
 <style>
 
@@ -15,6 +15,14 @@ section[data-testid="stSidebar"] {
     background-color: #E2E8F0;
 }
 
+/* filtres tags */
+[data-baseweb="tag"] {
+    background-color: #BFDBFE !important;
+    color: #1E3A8A !important;
+    border-radius: 6px !important;
+}
+
+/* KPI CARD */
 .kpi-card {
     background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
@@ -25,6 +33,7 @@ section[data-testid="stSidebar"] {
     justify-content: center;
     align-items: center;
     padding: 8px;
+    text-align: center;
 }
 
 .kpi-card h4 {
@@ -33,12 +42,17 @@ section[data-testid="stSidebar"] {
 }
 
 .kpi-card h2 {
-    margin: 2px 0 0 0;   /* 🔥 FIX ESPACE ICI */
+    margin: 2px 0 0 0; /* FIX ESPACE */
     font-size: 22px;
 }
 
 .stProgress > div > div > div > div {
     background-color:#0F8BC6;
+}
+
+h1, h2, h3 {
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
 }
 
 </style>
@@ -50,7 +64,7 @@ st.title("HelloWatt - Dashboard")
 
 page = st.sidebar.radio("Navigation", ["📊 Dashboard","👤 Agents","🎯 Objectifs"])
 
-# ---------------- UTILS (RESTAURÉS PROPRES) ----------------
+# ---------------- UTILS ----------------
 def clean_text(col):
     return col.astype(str).str.strip().str.upper()
 
@@ -78,6 +92,7 @@ if uploaded_file:
     code = pd.read_excel(xls,"Code")
     objectifs = pd.read_excel(xls,"Objectifs")
 
+    # ---------------- CLEAN ----------------
     df["responder"] = clean_text(df["responder"])
     code.iloc[:,0] = clean_text(code.iloc[:,0])
 
@@ -89,7 +104,7 @@ if uploaded_file:
     df["agent"] = clean_text(df["agent"]).fillna("INCONNU")
     df["get_provider"] = clean_text(df["get_provider"])
 
-    # ---------------- FIX GAZ (ON GARDE) ----------------
+    # 🔥 FIX GAZ / ELEC
     df["energie"] = (
         df["energie"]
         .astype(str)
@@ -144,7 +159,7 @@ if uploaded_file:
 
         total_ventes = df_filtered.shape[0]
 
-        # ---------------- KPI FIX ESPACE ----------------
+        # ---------------- KPI ----------------
         total_elec = df_filtered[df_filtered["energie"]=="ELEC"].shape[0]
         total_gaz = df_filtered[df_filtered["energie"]=="GAZ"].shape[0]
 
@@ -211,7 +226,7 @@ if uploaded_file:
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-    # ================= AGENTS (RESTAURÉ ORIGINAL) =================
+    # ================= AGENTS =================
     elif page=="👤 Agents":
 
         st.header("👤 Performance Agents")
@@ -233,12 +248,13 @@ if uploaded_file:
             c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
             c4.write(f"📅 {round(r['kpi'],1)}/J")
 
-    # ================= OBJECTIFS (RESTAURÉ ORIGINAL) =================
+    # ================= OBJECTIFS =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
 
         with st.container():
+
             st.markdown("### 👤 Agent")
 
             colA, colB = st.columns(2)
