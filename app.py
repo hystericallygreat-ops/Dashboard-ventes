@@ -36,6 +36,15 @@ section[data-testid="stSidebar"] {
     margin-bottom: 12px;
 }
 
+/* KPI CARDS */
+.kpi-card {
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
 /* ESPACE GLOBAL */
 h1, h2, h3 {
     margin-top: 10px !important;
@@ -146,15 +155,9 @@ if uploaded_file:
     # ================= DASHBOARD =================
     if page=="📊 Dashboard":
 
-        # ---------- HEADER ----------
-        st.markdown("""
-        <h1 style='margin-bottom:0;'>📊 Dashboard Global</h1>
-        <p style='color:gray;'>Suivi des objectifs fournisseurs</p>
-        """, unsafe_allow_html=True)
+        st.header("🏢 Objectifs Globaux")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        st.divider()
-
-        # ---------- DATA ----------
         ventes = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
 
         df_obj = objectifs.merge(
@@ -163,52 +166,69 @@ if uploaded_file:
 
         total_ventes = df_filtered.shape[0]
 
-        # ---------- KPI ----------
-        col1, col2, col3 = st.columns(3)
+        # -------- KPI CENTRÉS --------
+        col_space1, col1, col2, col3, col_space2 = st.columns([1,2,2,2,1])
 
         with col1:
-            st.metric("🎯 Objectif Total", f"{int(objectif_total)}")
+            st.markdown(f"""
+            <div class="kpi-card">
+                <h4>🎯 Objectif Total</h4>
+                <h2>{int(objectif_total)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
 
         with col2:
-            st.metric("📈 Réalisé", f"{int(total_ventes)}")
+            st.markdown(f"""
+            <div class="kpi-card">
+                <h4>📈 Réalisé</h4>
+                <h2>{int(total_ventes)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
 
         with col3:
             perf_global = total_ventes / objectif_total if objectif_total else 0
-            st.metric("🔥 Performance", f"{perf_global:.1%}")
+            st.markdown(f"""
+            <div class="kpi-card">
+                <h4>🔥 Performance</h4>
+                <h2>{perf_global:.1%}</h2>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.divider()
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        # ---------- FOURNISSEURS ----------
+        # -------- FOURNISSEURS LIGNE UNIQUE --------
         st.subheader("🏭 Performance par fournisseur")
 
-        df_obj = df_obj.sort_values("Objectifs Total",ascending=False)
+        for f in objectifs["Fournisseur"].dropna().unique():
 
-        for _,r in df_obj.iterrows():
+            df_f = df_filtered[df_filtered["get_provider"]==f]
 
-            objectif = r["Objectifs Total"]
-            ventes_val = r["ventes"]
-            p = ventes_val / objectif if objectif else 0
+            ventes_total_f = len(df_f)
+            obj_row = objectifs[objectifs["Fournisseur"]==f]
 
-            # couleur dynamique
-            if p >= 1:
-                color = "green"
-            elif p >= 0.8:
-                color = "orange"
-            else:
-                color = "red"
+            obj_total_f = obj_row["Objectifs Total"].sum()
+            obj_elec = obj_row["Objectif Elec"].sum()
+            obj_gaz = obj_row["Objectif Gaz"].sum()
 
-            col1, col2 = st.columns([4,2])
+            ventes_elec = len(df_f[df_f["energie"]=="ELEC"])
+            ventes_gaz = len(df_f[df_f["energie"]=="GAZ"])
 
-            with col1:
-                st.markdown(f"**{r['Fournisseur']}**")
+            p = ventes_total_f / obj_total_f if obj_total_f else 0
+
+            c1,c2,c3 = st.columns([2,5,4])
+
+            with c1:
+                st.write(f)
+
+            with c2:
                 st.progress(min(p,1.0))
 
-            with col2:
+            with c3:
                 st.markdown(f"""
-                <div style='text-align:right;'>
-                    <b>{int(ventes_val)}</b> / {int(objectif)}<br>
-                    <span style='color:{color}; font-weight:bold;'>{p:.0%}</span>
-                </div>
+                ⚡ {ventes_elec}/{int(obj_elec)} &nbsp;&nbsp;
+                🔥 {ventes_gaz}/{int(obj_gaz)} &nbsp;&nbsp;
+                🎯 {ventes_total_f}/{int(obj_total_f)} &nbsp;&nbsp;
+                <b>{emoji(p)} {p:.0%}</b>
                 """, unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
@@ -245,7 +265,7 @@ if uploaded_file:
         st.header("🎯 Performance détaillée")
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # -------- BLOC 1 --------
+        # (inchangé)
         with st.container():
             st.markdown("### 👤 Agent")
 
@@ -266,7 +286,6 @@ if uploaded_file:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # -------- BLOC 2 --------
         st.markdown("### ⚡ Ventes Fournisseurs")
 
         special=["HOMESERVE","FREE"]
@@ -290,7 +309,6 @@ if uploaded_file:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # -------- BLOC 3 --------
         st.markdown("### ⭐ Ventes Additionnelles")
 
         total_unique = df_agent[USER_COL].nunique()
