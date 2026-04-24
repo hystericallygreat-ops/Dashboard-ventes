@@ -7,7 +7,7 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS SAFE ----------------
+# ---------------- CSS ----------------
 st.markdown("""
 <style>
 
@@ -24,10 +24,17 @@ section[data-testid="stSidebar"] {
     background-color:#0F8BC6;
 }
 
-h1, h2, h3 {
-    margin-top: 10px !important;
-    margin-bottom: 10px !important;
+/* KPI */
+.kpi {
+    background:#F8FAFC;
+    border:1px solid #CBD5E1;
+    border-radius:12px;
+    padding:10px;
+    text-align:center;
 }
+
+.kpi-title {font-size:14px;font-weight:600;}
+.kpi-value {font-size:22px;font-weight:700;}
 
 </style>
 """, unsafe_allow_html=True)
@@ -77,7 +84,6 @@ if uploaded_file:
     df["agent"]=clean_text(df["agent"]).fillna("INCONNU")
     df["get_provider"]=clean_text(df["get_provider"])
 
-    # 🔥 FIX ÉNERGIE STABLE
     df["energie"]=(
         df["energie"]
         .astype(str)
@@ -142,18 +148,11 @@ if uploaded_file:
 
         for c,(t,v) in zip(cols,data):
             with c:
-                st.markdown(f"""
-                <div style="background:#F8FAFC;padding:12px;border-radius:12px;border:1px solid #CBD5E1;text-align:center">
-                    <div style="font-size:14px;font-weight:600">{t}</div>
-                    <div style="font-size:22px;font-weight:700">{v}</div>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='kpi'><div class='kpi-title'>{t}</div><div class='kpi-value'>{v}</div></div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # ================= FOURNISSEURS =================
-        st.subheader("🏭 Performance par fournisseur")
-
+        # 🔥 FOURNISSEURS EN UNE LIGNE
         for f in objectifs["Fournisseur"].dropna().unique():
 
             df_f = df_filtered[df_filtered["get_provider"]==f]
@@ -174,33 +173,16 @@ if uploaded_file:
             c1.write(f)
             c2.progress(min(p,1.0))
 
-            c3.markdown(f"""
-            ⚡ {v_elec}/{obj_elec}  
-            🔥 {v_gaz}/{obj_gaz}  
-            🎯 {v_total}/{obj_total}  
-            {emoji(p)} {p:.0%}
-            """, unsafe_allow_html=True)
+            # ✅ UNE SEULE LIGNE
+            c3.markdown(
+                f"⚡ {v_elec}/{obj_elec} &nbsp;&nbsp; "
+                f"🔥 {v_gaz}/{obj_gaz} &nbsp;&nbsp; "
+                f"🎯 {v_total}/{obj_total} &nbsp;&nbsp; "
+                f"{emoji(p)} {p:.0%}",
+                unsafe_allow_html=True
+            )
 
-    # ================= AGENTS =================
-    elif page=="👤 Agents":
-
-        st.header("👤 Performance Agents")
-
-        jours = get_working_days()
-        obj_agent = math.ceil(185*0.75)
-
-        v = df_filtered.groupby("agent").size().reset_index(name="ventes")
-        v["taux"] = v["ventes"]/obj_agent
-        v["kpi"] = v["ventes"]/jours if jours else 0
-
-        for _,r in v.iterrows():
-            c1,c2,c3,c4 = st.columns([3,5,2,2])
-            c1.write(r["agent"])
-            c2.progress(min(r["taux"],1))
-            c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent}")
-            c4.write(f"📅 {round(r['kpi'],1)}/J")
-
-    # ================= OBJECTIFS (CORRIGÉ PROPREMENT) =================
+    # ================= OBJECTIFS =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
@@ -209,7 +191,6 @@ if uploaded_file:
         heures = colA.number_input("Heures", value=185.0)
         agent = colB.selectbox("Agent", df_filtered["agent"].unique())
 
-        # ✅ CORRECT : base filtrée globale
         df_agent = df_filtered[df_filtered["agent"] == agent]
 
         obj_agent = round_excel(heures*0.75)
@@ -233,34 +214,19 @@ if uploaded_file:
                 continue
 
             df_f = df_agent[df_agent["get_provider"]==f]
-            obj = objectifs[objectifs["Fournisseur"]==f]["Objectifs Total"].sum()
+            obj_row = objectifs[objectifs["Fournisseur"]==f]
 
-            v = len(df_f)
-            p = v/obj if obj else 0
+            ventes = len(df_f)
+
+            # ✅ CORRECT : OBJECTIF PROPORTIONNEL
+            obj = round_excel(
+                heures * 0.75 * (obj_row["Objectifs Total"].sum() / objectif_total)
+            )
+
+            p = ventes / obj if obj else 0
 
             c1,c2,c3 = st.columns([3,6,2])
             c1.write(f)
             c2.progress(min(p,1.0))
-            c3.write(f"{emoji(p)} {v}/{obj}")
+            c3.write(f"{emoji(p)} {ventes}/{obj}")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        st.markdown("### ⭐ Ventes Additionnelles")
-
-        total_unique = df_agent[USER_COL].nunique()
-
-        for sp in special:
-
-            df_sp = df_agent[df_agent["get_provider"]==sp]
-            v = df_sp[USER_COL].nunique()
-
-            obj_sp = max(1, round_excel(total_unique*0.05))
-            p = v/obj_sp if obj_sp else 0
-
-            c1,c2,c3 = st.columns([3,6,2])
-            c1.write(sp)
-            c2.progress(min(p,1.0))
-            c3.write(f"{emoji(p)} {v}/{obj_sp}")
-
-else:
-    st.info("🔒 Ajoute un fichier (admin)")
