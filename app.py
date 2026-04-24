@@ -7,7 +7,7 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS ----------------
+# ---------------- CSS SAFE ----------------
 st.markdown("""
 <style>
 
@@ -24,30 +24,9 @@ section[data-testid="stSidebar"] {
     background-color:#0F8BC6;
 }
 
-/* KPI STYLE */
-.kpi-card {
-    background-color: #F8FAFC;
-    border: 1px solid #CBD5E1;
-    border-radius: 14px;
-    height: 110px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
-
-.kpi-card h4 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: #334155;
-}
-
-.kpi-card h2 {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 700;
+h1, h2, h3 {
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
 }
 
 </style>
@@ -98,7 +77,7 @@ if uploaded_file:
     df["agent"]=clean_text(df["agent"]).fillna("INCONNU")
     df["get_provider"]=clean_text(df["get_provider"])
 
-    # 🔥 FIX GAZ / ELEC STABLE
+    # 🔥 FIX ÉNERGIE STABLE
     df["energie"]=(
         df["energie"]
         .astype(str)
@@ -142,16 +121,16 @@ if uploaded_file:
 
         st.header("🏢 Objectifs Globaux")
 
-        total = df_filtered.shape[0]
-        elec = df_filtered[df_filtered["energie"]=="ELEC"].shape[0]
-        gaz = df_filtered[df_filtered["energie"]=="GAZ"].shape[0]
+        total = len(df_filtered)
+        elec = len(df_filtered[df_filtered["energie"]=="ELEC"])
+        gaz = len(df_filtered[df_filtered["energie"]=="GAZ"])
 
         obj_elec = objectifs["Objectif Elec"].sum()
         obj_gaz = objectifs["Objectif Gaz"].sum()
 
         perf = total / objectif_total if objectif_total else 0
 
-        cols = st.columns(5, gap="large")
+        cols = st.columns(5)
 
         data = [
             ("🎯 Total", total),
@@ -164,9 +143,9 @@ if uploaded_file:
         for c,(t,v) in zip(cols,data):
             with c:
                 st.markdown(f"""
-                <div class="kpi-card">
-                    <h4>{t}</h4>
-                    <h2>{v}</h2>
+                <div style="background:#F8FAFC;padding:12px;border-radius:12px;border:1px solid #CBD5E1;text-align:center">
+                    <div style="font-size:14px;font-weight:600">{t}</div>
+                    <div style="font-size:22px;font-weight:700">{v}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -178,7 +157,6 @@ if uploaded_file:
         for f in objectifs["Fournisseur"].dropna().unique():
 
             df_f = df_filtered[df_filtered["get_provider"]==f]
-
             obj_row = objectifs[objectifs["Fournisseur"]==f]
 
             obj_total = obj_row["Objectifs Total"].sum()
@@ -222,7 +200,7 @@ if uploaded_file:
             c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent}")
             c4.write(f"📅 {round(r['kpi'],1)}/J")
 
-    # ================= OBJECTIFS (FIX CRITIQUE FINAL) =================
+    # ================= OBJECTIFS (CORRIGÉ PROPREMENT) =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
@@ -231,7 +209,7 @@ if uploaded_file:
         heures = colA.number_input("Heures", value=185.0)
         agent = colB.selectbox("Agent", df_filtered["agent"].unique())
 
-        # 🔥 FIX IMPORTANT : base filtrée + cohérente
+        # ✅ CORRECT : base filtrée globale
         df_agent = df_filtered[df_filtered["agent"] == agent]
 
         obj_agent = round_excel(heures*0.75)
@@ -255,9 +233,8 @@ if uploaded_file:
                 continue
 
             df_f = df_agent[df_agent["get_provider"]==f]
-            obj_row = objectifs[objectifs["Fournisseur"]==f]
+            obj = objectifs[objectifs["Fournisseur"]==f]["Objectifs Total"].sum()
 
-            obj = obj_row["Objectifs Total"].sum()
             v = len(df_f)
             p = v/obj if obj else 0
 
@@ -282,7 +259,7 @@ if uploaded_file:
 
             c1,c2,c3 = st.columns([3,6,2])
             c1.write(sp)
-            c2.progress(min(p,1))
+            c2.progress(min(p,1.0))
             c3.write(f"{emoji(p)} {v}/{obj_sp}")
 
 else:
