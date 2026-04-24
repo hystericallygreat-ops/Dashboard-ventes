@@ -15,13 +15,14 @@ section[data-testid="stSidebar"] {
     background-color: #E2E8F0;
 }
 
+/* filtres */
 [data-baseweb="tag"] {
     background-color: #BFDBFE !important;
     color: #1E3A8A !important;
     border-radius: 6px !important;
 }
 
-/* KPI CARD AMÉLIORÉ */
+/* KPI CARD */
 .kpi-card {
     background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
@@ -32,19 +33,18 @@ section[data-testid="stSidebar"] {
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 8px;
-    gap: 4px;
+    padding: 6px;
 }
 
 .kpi-card h4 {
     margin: 0;
-    font-size: 16px;   /* 🔥 TEXTE PLUS GRAND */
+    font-size: 16px;
     font-weight: 600;
     color: #334155;
 }
 
 .kpi-card h2 {
-    margin: 0;         /* 🔥 rapproche texte du chiffre */
+    margin: 0;
     font-size: 24px;
     font-weight: 700;
 }
@@ -95,7 +95,7 @@ if uploaded_file:
     code = pd.read_excel(xls,"Code")
     objectifs = pd.read_excel(xls,"Objectifs")
 
-    # ---------------- CLEAN ----------------
+    # CLEAN
     df["responder"] = clean_text(df["responder"])
     code.iloc[:,0] = clean_text(code.iloc[:,0])
 
@@ -106,6 +106,8 @@ if uploaded_file:
 
     df["agent"] = clean_text(df["agent"]).fillna("INCONNU")
     df["get_provider"] = clean_text(df["get_provider"])
+
+    # 🔥 FIX GAZ / ELEC
     df["energie"] = (
         df["energie"]
         .astype(str)
@@ -249,7 +251,7 @@ if uploaded_file:
             c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
             c4.write(f"📅 {round(r['kpi'],1)}/J")
 
-    # ================= OBJECTIFS (FIX COMPLET AFFICHAGE) =================
+    # ================= OBJECTIFS FIX FINAL =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
@@ -262,8 +264,8 @@ if uploaded_file:
             heures = colA.number_input("Heures", value=185.0)
             agent = colB.selectbox("Agent", df["agent"].unique())
 
-            # 🔥 FIX IMPORTANT
-            df_agent = df[df["agent"].fillna("INCONNU") == str(agent).strip().upper()]
+            # ✅ FIX IMPORTANT (CAUSE DU BUG)
+            df_agent = df_filtered[df_filtered["agent"] == agent]
 
             obj_agent = round_excel(heures*0.75)
             ventes_total = len(df_agent)
