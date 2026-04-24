@@ -7,7 +7,7 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS ----------------
+# ---------------- CSS SAFE ----------------
 st.markdown("""
 <style>
 
@@ -15,38 +15,9 @@ section[data-testid="stSidebar"] {
     background-color: #E2E8F0;
 }
 
-/* filtres */
 [data-baseweb="tag"] {
     background-color: #BFDBFE !important;
     color: #1E3A8A !important;
-    border-radius: 6px !important;
-}
-
-/* KPI CARD */
-.kpi-card {
-    background-color: #F8FAFC;
-    border: 1px solid #CBD5E1;
-    border-radius: 14px;
-    height: 120px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 6px;
-}
-
-.kpi-card h4 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #334155;
-}
-
-.kpi-card h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 700;
 }
 
 .stProgress > div > div > div > div {
@@ -69,7 +40,7 @@ page = st.sidebar.radio("Navigation", ["📊 Dashboard","👤 Agents","🎯 Obje
 
 # ---------------- UTILS ----------------
 def clean_text(col):
-    return col.astype(str).str.strip().str.upper()
+    return col.astype(str).str.strip().str.replace('"','').str.replace("'","").str.upper()
 
 def emoji(p):
     return "🟢" if p>=1 else "🟠" if p>=0.7 else "🔴"
@@ -95,32 +66,22 @@ if uploaded_file:
     code = pd.read_excel(xls,"Code")
     objectifs = pd.read_excel(xls,"Objectifs")
 
-    # CLEAN
-    df["responder"] = clean_text(df["responder"])
-    code.iloc[:,0] = clean_text(code.iloc[:,0])
+    df["responder"]=clean_text(df["responder"])
+    code.iloc[:,0]=clean_text(code.iloc[:,0])
 
     df = df.merge(
         code.rename(columns={code.columns[0]:"responder",code.columns[1]:"agent"}),
         on="responder",how="left"
     )
 
-    df["agent"] = clean_text(df["agent"]).fillna("INCONNU")
-    df["get_provider"] = clean_text(df["get_provider"])
+    df["agent"]=clean_text(df["agent"]).fillna("INCONNU")
+    df["get_provider"]=clean_text(df["get_provider"])
+    df["energie"]=clean_text(df["energie"])
+    df["date"]=pd.to_datetime(df["date"],errors="coerce")
 
-    # 🔥 FIX GAZ / ELEC
-    df["energie"] = (
-        df["energie"]
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .replace({"gas":"GAZ","elec":"ELEC"})
-        .str.upper()
-    )
+    objectifs["Fournisseur"]=clean_text(objectifs["Fournisseur"])
 
-    df["date"] = pd.to_datetime(df["date"],errors="coerce")
-    objectifs["Fournisseur"] = clean_text(objectifs["Fournisseur"])
-
-    USER_COL = "user id"
+    USER_COL="user id"
 
     # ---------------- FILTRES ----------------
     st.sidebar.markdown("### 🔎 Filtres")
@@ -129,11 +90,8 @@ if uploaded_file:
     fournisseurs = st.sidebar.multiselect("Fournisseurs", df["get_provider"].unique(), df["get_provider"].unique())
     energie = st.sidebar.multiselect("Énergie", df["energie"].unique(), df["energie"].unique())
 
-    min_d,max_d = df["date"].min(),df["date"].max()
+    min_d,max_d=df["date"].min(),df["date"].max()
     dates = st.sidebar.date_input("Période",[min_d,max_d])
-
-    if len(energie) == 0:
-        energie = df["energie"].unique()
 
     df_filtered = df[
         df["agent"].isin(agents) &
@@ -160,72 +118,16 @@ if uploaded_file:
             ventes,left_on="Fournisseur",right_on="get_provider",how="left"
         ).fillna(0)
 
-        total_ventes = df_filtered.shape[0]
+        df_obj = df_obj.sort_values("Objectifs Total",ascending=False)
 
-        # KPI
-        total_elec = df_filtered[df_filtered["energie"]=="ELEC"].shape[0]
-        total_gaz = df_filtered[df_filtered["energie"]=="GAZ"].shape[0]
+        for _,r in df_obj.iterrows():
 
-        obj_elec = objectifs["Objectif Elec"].sum()
-        obj_gaz = objectifs["Objectif Gaz"].sum()
+            p = r["ventes"]/r["Objectifs Total"] if r["Objectifs Total"] else 0
 
-        perf_global = total_ventes / objectif_total if objectif_total else 0
-
-        kpi_cols = st.columns(5, gap="large")
-
-        kpi_data = [
-            ("🎯 Objectif", f"{int(objectif_total)}"),
-            ("📈 Réalisé", f"{int(total_ventes)}"),
-            ("🔥 Performance", f"{perf_global:.1%}"),
-            ("⚡ Élec", f"{total_elec}/{int(obj_elec)}"),
-            ("🔥 Gaz", f"{total_gaz}/{int(obj_gaz)}"),
-        ]
-
-        for col,(title,value) in zip(kpi_cols,kpi_data):
-            with col:
-                st.markdown(f"""
-                <div class="kpi-card">
-                    <h4>{title}</h4>
-                    <h2>{value}</h2>
-                </div>
-                """, unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # ================= FOURNISSEURS =================
-        st.subheader("🏭 Performance par fournisseur")
-
-        for f in objectifs["Fournisseur"].dropna().unique():
-
-            df_f = df_filtered[df_filtered["get_provider"]==f]
-
-            ventes_total_f = len(df_f)
-            obj_row = objectifs[objectifs["Fournisseur"]==f]
-
-            obj_total_f = obj_row["Objectifs Total"].sum()
-            obj_elec_f = obj_row["Objectif Elec"].sum()
-            obj_gaz_f = obj_row["Objectif Gaz"].sum()
-
-            ventes_elec = len(df_f[df_f["energie"]=="ELEC"])
-            ventes_gaz = len(df_f[df_f["energie"]=="GAZ"])
-
-            p = ventes_total_f / obj_total_f if obj_total_f else 0
-
-            c1,c2,c3 = st.columns([2,5,4])
-
-            with c1:
-                st.write(f)
-
-            with c2:
-                st.progress(min(p,1.0))
-
-            with c3:
-                st.markdown(f"""
-                ⚡ {ventes_elec}/{int(obj_elec_f)} &nbsp;&nbsp;
-                🔥 {ventes_gaz}/{int(obj_gaz_f)} &nbsp;&nbsp;
-                🎯 {ventes_total_f}/{int(obj_total_f)} &nbsp;&nbsp;
-                <b>{emoji(p)} {p:.0%}</b>
-                """, unsafe_allow_html=True)
+            c1,c2,c3 = st.columns([3,6,2])
+            c1.write(r["Fournisseur"])
+            c2.progress(min(p,1.0))
+            c3.write(f"{emoji(p)} {int(r['ventes'])}/{int(r['Objectifs Total'])} ({p:.0%})")
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -237,9 +139,9 @@ if uploaded_file:
         jours = get_working_days()
         obj_agent = math.ceil(185*0.75)
 
-        ventes_agent = df.groupby("agent").size().reset_index(name="ventes")
-        ventes_agent["taux"] = ventes_agent["ventes"]/obj_agent
-        ventes_agent["kpi"] = ventes_agent["ventes"]/jours if jours else 0
+        ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
+        ventes_agent["taux"]=ventes_agent["ventes"]/obj_agent
+        ventes_agent["kpi"]=ventes_agent["ventes"]/jours if jours else 0
 
         ventes_agent = ventes_agent.sort_values("taux",ascending=False)
 
@@ -251,30 +153,70 @@ if uploaded_file:
             c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
             c4.write(f"📅 {round(r['kpi'],1)}/J")
 
-    # ================= OBJECTIFS FIX FINAL =================
+    # ================= OBJECTIFS (FIX FINAL PROPRE) =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
 
-        with st.container():
+        colA, colB = st.columns(2)
+        heures = colA.number_input("Heures", value=185.0)
+        agent = colB.selectbox("Agent", df_filtered["agent"].unique())
 
-            st.markdown("### 👤 Agent")
+        # 🔥 FIX IMPORTANT : utilisation df_filtered (cohérence globale)
+        df_agent = df_filtered[df_filtered["agent"] == agent]
 
-            colA, colB = st.columns(2)
-            heures = colA.number_input("Heures", value=185.0)
-            agent = colB.selectbox("Agent", df["agent"].unique())
+        obj_agent = round_excel(heures*0.75)
+        ventes_total = len(df_agent)
+        taux = ventes_total/obj_agent if obj_agent else 0
 
-            # ✅ FIX IMPORTANT (CAUSE DU BUG)
-            df_agent = df_filtered[df_filtered["agent"] == agent]
+        c1,c2,c3 = st.columns([3,6,2])
+        c1.write(agent)
+        c2.progress(min(taux,1.0))
+        c3.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
 
-            obj_agent = round_excel(heures*0.75)
-            ventes_total = len(df_agent)
-            taux = ventes_total/obj_agent if obj_agent else 0
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("### ⚡ Ventes Fournisseurs")
+
+        special=["HOMESERVE","FREE"]
+
+        objectif_total = objectifs["Objectifs Total"].sum()
+
+        for f in objectifs["Fournisseur"].dropna().unique():
+
+            if f in special:
+                continue
+
+            df_f = df_agent[df_agent["get_provider"]==f]
+            obj_row = objectifs[objectifs["Fournisseur"]==f]
+
+            ventes=len(df_f)
+            obj=round_excel(heures*0.75*(obj_row["Objectifs Total"].sum()/objectif_total))
+            p=ventes/obj if obj else 0
 
             c1,c2,c3 = st.columns([3,6,2])
-            c1.write(agent)
-            c2.progress(min(taux,1.0))
-            c3.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
+            c1.write(f)
+            c2.progress(min(p,1.0))
+            c3.write(f"{emoji(p)} {ventes}/{obj} ({p:.0%})")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown("### ⭐ Ventes Additionnelles")
+
+        total_unique = df_agent[USER_COL].nunique()
+
+        for sp in special:
+
+            df_sp = df_agent[df_agent["get_provider"]==sp]
+            ventes_sp = df_sp[USER_COL].nunique()
+
+            obj_sp = max(1, round_excel(total_unique*0.05))
+            p_sp = ventes_sp/obj_sp if obj_sp else 0
+
+            c1,c2,c3 = st.columns([3,6,2])
+            c1.write(sp)
+            c2.progress(min(p_sp,1.0))
+            c3.write(f"{emoji(p_sp)} {ventes_sp}/{obj_sp} ({p_sp:.0%})")
 
 else:
     st.info("🔒 Ajoute un fichier (admin)")
