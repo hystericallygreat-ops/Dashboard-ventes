@@ -24,20 +24,16 @@ section[data-testid="stSidebar"] {
     background-color:#0F8BC6;
 }
 
-.block {
-    padding: 12px;
-    border-radius: 10px;
-    background-color: #F8FAFC;
-    border: 1px solid #CBD5E1;
-    margin-bottom: 12px;
-}
-
 .kpi-card {
     background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
     border-radius: 12px;
     padding: 18px;
     text-align: center;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 h1, h2, h3 {
@@ -85,22 +81,22 @@ if uploaded_file:
     code = pd.read_excel(xls,"Code")
     objectifs = pd.read_excel(xls,"Objectifs")
 
-    df["responder"]=clean_text(df["responder"])
-    code.iloc[:,0]=clean_text(code.iloc[:,0])
+    df["responder"] = clean_text(df["responder"])
+    code.iloc[:,0] = clean_text(code.iloc[:,0])
 
     df = df.merge(
         code.rename(columns={code.columns[0]:"responder",code.columns[1]:"agent"}),
         on="responder",how="left"
     )
 
-    df["agent"]=clean_text(df["agent"]).fillna("INCONNU")
-    df["get_provider"]=clean_text(df["get_provider"])
-    df["energie"]=clean_text(df["energie"])
-    df["date"]=pd.to_datetime(df["date"],errors="coerce")
+    df["agent"] = clean_text(df["agent"]).fillna("INCONNU")
+    df["get_provider"] = clean_text(df["get_provider"])
+    df["energie"] = df["energie"].astype(str).str.strip().str.upper()
+    df["date"] = pd.to_datetime(df["date"],errors="coerce")
 
-    objectifs["Fournisseur"]=clean_text(objectifs["Fournisseur"])
+    objectifs["Fournisseur"] = clean_text(objectifs["Fournisseur"])
 
-    USER_COL="user id"
+    USER_COL = "user id"
 
     # ---------------- FILTRES ----------------
     st.sidebar.markdown("### 🔎 Filtres")
@@ -109,10 +105,9 @@ if uploaded_file:
     fournisseurs = st.sidebar.multiselect("Fournisseurs", df["get_provider"].unique(), df["get_provider"].unique())
     energie = st.sidebar.multiselect("Énergie", df["energie"].unique(), df["energie"].unique())
 
-    min_d,max_d=df["date"].min(),df["date"].max()
+    min_d,max_d = df["date"].min(),df["date"].max()
     dates = st.sidebar.date_input("Période",[min_d,max_d])
 
-    # FIX SAFE (GAZ / ELEC)
     if len(energie) == 0:
         energie = df["energie"].unique()
 
@@ -143,55 +138,33 @@ if uploaded_file:
 
         total_ventes = df_filtered.shape[0]
 
-        # ---------------- KPI CENTRÉS ----------------
-        col_space1, col1, col2, col3, col4, col5, col_space2 = st.columns([1,2,2,2,2,2,1])
-
-        with col1:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <h4>🎯 Objectif Total</h4>
-                <h2>{int(objectif_total)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col2:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <h4>📈 Réalisé</h4>
-                <h2>{int(total_ventes)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col3:
-            perf_global = total_ventes / objectif_total if objectif_total else 0
-            st.markdown(f"""
-            <div class="kpi-card">
-                <h4>🔥 Performance</h4>
-                <h2>{perf_global:.1%}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-
-        total_elec = df_filtered[df_filtered["energie"]=="ELEC"].shape[0]
-        total_gaz = df_filtered[df_filtered["energie"]=="GAZ"].shape[0]
+        # ================= KPI PROPRE =================
+        total_elec = df_filtered[df_filtered["energie"].str.contains("ELEC", na=False)].shape[0]
+        total_gaz = df_filtered[df_filtered["energie"].str.contains("GAZ", na=False)].shape[0]
 
         obj_elec = objectifs["Objectif Elec"].sum()
         obj_gaz = objectifs["Objectif Gaz"].sum()
 
-        with col4:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <h4>⚡ Électricité</h4>
-                <h2>{total_elec}/{int(obj_elec)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
+        perf_global = total_ventes / objectif_total if objectif_total else 0
 
-        with col5:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <h4>🔥 Gaz</h4>
-                <h2>{total_gaz}/{int(obj_gaz)}</h2>
-            </div>
-            """, unsafe_allow_html=True)
+        kpi_cols = st.columns(5, gap="large")
+
+        kpi_data = [
+            ("🎯 Objectif Total", f"{int(objectif_total)}"),
+            ("📈 Réalisé", f"{int(total_ventes)}"),
+            ("🔥 Performance", f"{perf_global:.1%}"),
+            ("⚡ Électricité", f"{total_elec}/{int(obj_elec)}"),
+            ("🔥 Gaz", f"{total_gaz}/{int(obj_gaz)}"),
+        ]
+
+        for col, (title, value) in zip(kpi_cols, kpi_data):
+            with col:
+                st.markdown(f"""
+                <div class="kpi-card">
+                    <h4>{title}</h4>
+                    <h2>{value}</h2>
+                </div>
+                """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -209,8 +182,8 @@ if uploaded_file:
             obj_elec_f = obj_row["Objectif Elec"].sum()
             obj_gaz_f = obj_row["Objectif Gaz"].sum()
 
-            ventes_elec = len(df_f[df_f["energie"]=="ELEC"])
-            ventes_gaz = len(df_f[df_f["energie"]=="GAZ"])
+            ventes_elec = len(df_f[df_f["energie"].str.contains("ELEC", na=False)])
+            ventes_gaz = len(df_f[df_f["energie"].str.contains("GAZ", na=False)])
 
             p = ventes_total_f / obj_total_f if obj_total_f else 0
 
@@ -232,7 +205,7 @@ if uploaded_file:
 
             st.markdown("<br>", unsafe_allow_html=True)
 
-    # ================= AGENTS (corrigé emoji KPI jour) =================
+    # ================= AGENTS =================
     elif page=="👤 Agents":
 
         st.header("👤 Performance Agents")
@@ -241,8 +214,8 @@ if uploaded_file:
         obj_agent = math.ceil(185*0.75)
 
         ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
-        ventes_agent["taux"]=ventes_agent["ventes"]/obj_agent
-        ventes_agent["kpi"]=ventes_agent["ventes"]/jours if jours else 0
+        ventes_agent["taux"] = ventes_agent["ventes"]/obj_agent
+        ventes_agent["kpi"] = ventes_agent["ventes"]/jours if jours else 0
 
         ventes_agent = ventes_agent.sort_values("taux",ascending=False)
 
@@ -254,7 +227,7 @@ if uploaded_file:
             c3.write(f"{emoji(r['taux'])} {r['ventes']}/{obj_agent} ({r['taux']:.0%})")
             c4.write(f"📅 {emoji(r['taux'])} {round(r['kpi'],1)}/J")
 
-    # ================= OBJECTIFS (RESTE IDENTIQUE) =================
+    # ================= OBJECTIFS =================
     elif page=="🎯 Objectifs":
 
         st.header("🎯 Performance détaillée")
