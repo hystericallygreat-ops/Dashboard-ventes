@@ -7,7 +7,6 @@ import holidays
 
 st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
 
-# ---------------- CSS SAFE ----------------
 st.markdown("""
 <style>
 
@@ -32,9 +31,8 @@ section[data-testid="stSidebar"] {
     margin-bottom: 12px;
 }
 
-h1, h2, h3 {
-    margin-top: 10px !important;
-    margin-bottom: 10px !important;
+div[data-testid="column"] {
+    min-width: 120px;
 }
 
 </style>
@@ -66,6 +64,8 @@ def get_working_days():
 # ---------------- DATA ----------------
 if os.path.exists(SAVE_PATH):
     uploaded_file = SAVE_PATH
+else:
+    uploaded_file = None
 
 if uploaded_file:
 
@@ -97,7 +97,6 @@ if uploaded_file:
     df["date"]=pd.to_datetime(df["date"],errors="coerce")
     objectifs["Fournisseur"]=clean_text(objectifs["Fournisseur"])
 
-    # ---------------- FILTRES ----------------
     agents = st.sidebar.multiselect("Agents", df["agent"].unique(), df["agent"].unique())
     fournisseurs = st.sidebar.multiselect("Fournisseurs", df["get_provider"].unique(), df["get_provider"].unique())
     energie = st.sidebar.multiselect("Énergie", df["energie"].unique(), df["energie"].unique())
@@ -123,10 +122,43 @@ if uploaded_file:
             (df_filtered["date"]<=pd.to_datetime(dates[1]))
         ]
 
-    objectif_total = objectifs["Objectifs Total"].sum()
+    # ================= DASHBOARD =================
+    if page=="📊 Dashboard":
+
+        st.header("🏢 Objectifs Globaux")
+
+        ventes = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
+
+        df_obj = objectifs.merge(
+            ventes,
+            left_on="Fournisseur",
+            right_on="get_provider",
+            how="left"
+        ).fillna({"ventes":0})
+
+        for _,r in df_obj.iterrows():
+
+            p = r["ventes"]/r["Objectifs Total"] if r["Objectifs Total"] else 0
+
+            df_f = df_filtered[df_filtered["get_provider"]==r["Fournisseur"]]
+
+            v_elec = len(df_f[df_f["energie"]=="ELEC"])
+            v_gaz = len(df_f[df_f["energie"]=="GAZ"])
+            v_total = len(df_f)
+
+            obj_elec = objectifs[objectifs["Fournisseur"]==r["Fournisseur"]]["Objectif Elec"].sum()
+            obj_gaz = objectifs[objectifs["Fournisseur"]==r["Fournisseur"]]["Objectif Gaz"].sum()
+
+            c1,c2,c3 = st.columns([3,6,4])
+            c1.write(r["Fournisseur"])
+            c2.progress(min(p,1.0))
+            c3.markdown(
+                f"⚡ {v_elec}/{obj_elec} 🔥 {v_gaz}/{obj_gaz} 🎯 {int(v_total)}/{int(r['Objectifs Total'])} {emoji(p)} {p:.0%}",
+                unsafe_allow_html=True
+            )
 
     # ================= AGENTS =================
-    if page=="👤 Agents":
+    elif page=="👤 Agents":
 
         st.header("👤 Performance Agents")
 
@@ -134,50 +166,45 @@ if uploaded_file:
         obj_agent = math.ceil(185*0.75)
 
         ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
-
         ventes_agent["taux"]=ventes_agent["ventes"]/obj_agent
         ventes_agent["kpi"]=ventes_agent["ventes"]/jours if jours else 0
 
         ventes_agent = ventes_agent.sort_values("taux",ascending=False)
 
-        total_obj_global = objectifs["Objectifs Total"].sum()
-        total_obj_elec = objectifs["Objectif Elec"].sum()
-        total_obj_gaz = objectifs["Objectif Gaz"].sum()
+        total_obj = objectifs["Objectifs Total"].sum()
+        obj_elec_global = objectifs["Objectif Elec"].sum()
+        obj_gaz_global = objectifs["Objectif Gaz"].sum()
 
-        ratio_elec = total_obj_elec / total_obj_global if total_obj_global else 0
-        ratio_gaz = total_obj_gaz / total_obj_global if total_obj_global else 0
+        ratio_elec = obj_elec_global/total_obj if total_obj else 0
+        ratio_gaz = obj_gaz_global/total_obj if total_obj else 0
 
         for _,r in ventes_agent.iterrows():
 
             agent_name = r["agent"]
-            df_agent = df_filtered[df_filtered["agent"] == agent_name]
+            df_agent = df_filtered[df_filtered["agent"]==agent_name]
 
             v_elec = len(df_agent[df_agent["energie"]=="ELEC"])
             v_gaz = len(df_agent[df_agent["energie"]=="GAZ"])
-
-            # TOTAL = TOUT
             v_total = len(df_agent)
 
-            obj_elec = round(obj_agent * ratio_elec)
-            obj_gaz = round(obj_agent * ratio_gaz)
+            obj_elec = round(obj_agent*ratio_elec)
+            obj_gaz = round(obj_agent*ratio_gaz)
             obj_total = obj_elec + obj_gaz
 
-            p = v_total / obj_total if obj_total else 0
+            p = v_total/obj_total if obj_total else 0
 
-            c1,c2,c3,c4 = st.columns([3,5,4,2])
+            c1,c2,c3,c4 = st.columns([3,5,6,3])
 
             c1.write(agent_name)
             c2.progress(min(p,1.0))
 
-            # 🔥 TABLE ALIGNÉE (FIX FINAL)
             c3.markdown(
                 f"""
                 <div style="
-                    display:grid;
-                    grid-template-columns:95px 95px 120px 70px;
-                    font-size:14px;
-                    white-space:nowrap;
+                    display:flex;
+                    gap:18px;
                     align-items:center;
+                    white-space:nowrap;
                 ">
                     <div>⚡ <b>{v_elec}</b>/<span>{obj_elec}</span></div>
                     <div>🔥 <b>{v_gaz}</b>/<span>{obj_gaz}</span></div>
@@ -199,12 +226,10 @@ if uploaded_file:
         heures = colA.number_input("Heures", value=185.0)
         agent = colB.selectbox("Agent", df_filtered["agent"].dropna().unique())
 
-        df_agent = df_filtered[df_filtered["agent"] == agent]
+        df_agent = df_filtered[df_filtered["agent"]==agent]
 
         obj_agent = round_excel(heures*0.75)
-
         ventes_total = len(df_agent)
-
         taux = ventes_total/obj_agent if obj_agent else 0
 
         st.markdown("<div class='block'>", unsafe_allow_html=True)
