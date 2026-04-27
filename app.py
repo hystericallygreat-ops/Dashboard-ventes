@@ -197,10 +197,7 @@ if uploaded_file:
 
             c1,c2,c3,c4 = st.columns([3,5,6,3])
 
-            c1.markdown(
-            f"<div style='white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;'>{agent_name}</div>",
-            unsafe_allow_html=True
-            )
+            c1.write(agent_name)
             c2.progress(min(p,1.0))
 
             c3.markdown(
