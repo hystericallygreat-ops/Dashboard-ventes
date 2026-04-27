@@ -234,12 +234,14 @@ if uploaded_file:
             c2.progress(min(taux, 1.0))
     
             # Détail ventes (NOUVEAU FORMAT)
-                sub1, sub2, sub3, sub4 = c3.columns([2, 2, 3, 2])
-                
-                sub1.markdown(f"⚡ {v_elec}", unsafe_allow_html=True)
-                sub2.markdown(f"🔥 {v_gaz}", unsafe_allow_html=True)
-                sub3.markdown(f"🎯 {v_total}/{obj_agent}", unsafe_allow_html=True)
-                sub4.markdown(f"{emoji(taux)} {taux:.0%}", unsafe_allow_html=True)
+            c3.markdown(
+                f"⚡ {v_elec} &nbsp;&nbsp; "
+                f"🔥 {v_gaz} &nbsp;&nbsp; "
+                f"🎯 {v_total}/{obj_agent} &nbsp;&nbsp; "
+                f"{emoji(taux)} {taux:.0%}",
+                unsafe_allow_html=True
+            )
+    
             # KPI (inchangé)
             c4.write(f"📅 {round(r['kpi'],1)}/J")
     # ================= OBJECTIFS =================
