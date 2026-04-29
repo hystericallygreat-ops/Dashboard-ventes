@@ -214,8 +214,10 @@ def generate_rapport_png(df_obj_render, dates):
         ax_table.text(cx, header_y, cl, transform=ax_table.transAxes,
                       fontsize=8.5, fontweight="bold", color="#334155", va="center")
 
-    ax_table.axhline(y=header_y - 0.022, xmin=0, xmax=1,
-                     color="#CBD5E1", linewidth=1, transform=ax_table.transAxes)
+    ax_table.plot(
+        [0, 1], [header_y - 0.022, header_y - 0.022],
+        color="#CBD5E1", linewidth=1, transform=ax_table.transAxes, clip_on=False
+    )
 
     row_h = (0.86 - 0.05) / max(n, 1)
 
