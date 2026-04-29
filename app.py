@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch
 
-st.set_page_config(page_title="HelloWatt Dashboard", layout="wide")
+st.set_page_config(page_title="Dashboard", layout="wide")
 
 # ================================================================
 # CSS
@@ -195,7 +195,7 @@ def generate_rapport_png(df_obj_render, dates):
         transform=ax_table.transAxes, clip_on=False
     )
     ax_table.add_patch(header_rect)
-    ax_table.text(0.02, 0.945, "HelloWatt", transform=ax_table.transAxes,
+    ax_table.text(0.02, 0.945, "Dashboard", transform=ax_table.transAxes,
                   fontsize=15, fontweight="bold", color="white", va="center")
 
     if len(dates) == 2:
@@ -316,7 +316,7 @@ def generate_rapport_png(df_obj_render, dates):
 # ================================================================
 # HEADER
 # ================================================================
-st.title("HelloWatt - Dashboard")
+st.title("Dashboard")
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ================================================================
@@ -551,7 +551,7 @@ if uploaded_file:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <div id="rapport-table" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FFFFFF;border-radius:12px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-top:4px;">
   <div style="background:#0F8BC6;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;">
-    <span style="color:white;font-size:18px;font-weight:700;letter-spacing:0.5px;">HelloWatt</span>
+    <span style="color:white;font-size:18px;font-weight:700;letter-spacing:0.5px;">Dashboard</span>
     <span style="color:rgba(255,255,255,0.85);font-size:12px;">📅 {d_start} → {d_end}</span>
   </div>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">
