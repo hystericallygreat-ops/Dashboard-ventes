@@ -20,12 +20,10 @@ st.set_page_config(
 )
 
 # ================================================================
-# PALETTE — inspirée site énergie bleu/orange
-# ================================================================
-# Bleu principal : #0E4ACB  Bleu foncé : #0A3499  Bleu clair : #E8EFFC
-# Orange accent  : #FF6B35  Orange clair : #FFF0EB
+# Bleu principal : #00AEEF  Bleu foncé : #005F8E  Bleu clair : #E6F4FB
+# Orange accent  : #00AEEF  Orange clair : #E6F4FB
 # Vert succès    : #00C48C  Rouge danger : #FF4757  Jaune warning: #FFB300
-# Gris texte     : #1A1D2E  Gris moyen : #64748B   Gris clair : #F4F6FA
+# Gris texte     : #1A3A5C  Gris moyen : #64748B   Gris clair : #F4F6FA
 # ================================================================
 
 CSS = """
@@ -39,35 +37,37 @@ html, body, [class*="css"] {
     padding-top: 1.5rem !important;
     padding-bottom: 2rem !important;
     max-width: 1400px;
+    background: #F4F9FC !important;
 }
 
-/* ---- SIDEBAR SOMBRE PRO ---- */
+/* ---- SIDEBAR BLANCHE HELLOWATT ---- */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0A3499 0%, #0E4ACB 60%, #1a5fd4 100%) !important;
-    border-right: none !important;
+    background: #FFFFFF !important;
+    border-right: 1px solid #DCEEF8 !important;
 }
 section[data-testid="stSidebar"] * {
-    color: #ffffff !important;
+    color: #1A3A5C !important;
 }
 section[data-testid="stSidebar"] .stRadio label {
-    color: rgba(255,255,255,0.85) !important;
-    font-size: 0.9rem !important;
+    color: #1A3A5C !important;
+    font-size: 0.88rem !important;
     font-weight: 500 !important;
-    padding: 6px 8px !important;
-    border-radius: 6px !important;
+    padding: 7px 10px !important;
+    border-radius: 8px !important;
     transition: background 0.15s !important;
 }
 section[data-testid="stSidebar"] .stRadio label:hover {
-    background: rgba(255,255,255,0.12) !important;
+    background: #E6F4FB !important;
+    color: #00AEEF !important;
 }
 section[data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div {
-    background: rgba(255,255,255,0.18) !important;
-    border-radius: 6px !important;
+    background: #E6F4FB !important;
+    border-radius: 8px !important;
 }
 section[data-testid="stSidebar"] h3,
 section[data-testid="stSidebar"] .stMarkdown h3 {
-    color: rgba(255,255,255,0.55) !important;
-    font-size: 0.7rem !important;
+    color: #94A3B8 !important;
+    font-size: 0.68rem !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.12em !important;
@@ -76,23 +76,24 @@ section[data-testid="stSidebar"] .stMarkdown h3 {
 section[data-testid="stSidebar"] .stMultiSelect > div,
 section[data-testid="stSidebar"] .stDateInput > div,
 section[data-testid="stSidebar"] .stTextInput > div {
-    background: rgba(255,255,255,0.1) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
+    background: #F8FBFD !important;
+    border: 1px solid #DCEEF8 !important;
     border-radius: 8px !important;
 }
 section[data-testid="stSidebar"] [data-baseweb="tag"] {
-    background: rgba(255,107,53,0.85) !important;
-    color: #fff !important;
+    background: #E6F4FB !important;
+    color: #1AABDB !important;
     border-radius: 4px !important;
+    font-weight: 600 !important;
 }
 section[data-testid="stSidebar"] hr {
-    border-color: rgba(255,255,255,0.15) !important;
+    border-color: #DCEEF8 !important;
     margin: 12px 0 !important;
 }
 section[data-testid="stSidebar"] input[type="password"] {
-    background: rgba(255,255,255,0.1) !important;
-    color: white !important;
-    border: 1px solid rgba(255,255,255,0.25) !important;
+    background: #F8FBFD !important;
+    color: #1A3A5C !important;
+    border: 1px solid #DCEEF8 !important;
 }
 
 /* ---- PAGE HEADER ---- */
@@ -102,12 +103,12 @@ section[data-testid="stSidebar"] input[type="password"] {
     justify-content: space-between;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 2px solid #E8EFFC;
+    border-bottom: 2px solid #E6F4FB;
 }
 .page-header-left h1 {
     font-size: 1.6rem !important;
     font-weight: 800 !important;
-    color: #1A1D2E !important;
+    color: #1A3A5C !important;
     margin: 0 !important;
     letter-spacing: -0.02em;
 }
@@ -117,8 +118,8 @@ section[data-testid="stSidebar"] input[type="password"] {
     margin: 2px 0 0 0;
 }
 .page-badge {
-    background: linear-gradient(135deg, #0E4ACB, #3B6FE0);
-    color: white !important;
+    background: #00AEEF;
+    color: #1A3A5C !important;
     padding: 6px 14px;
     border-radius: 20px;
     font-size: 0.78rem;
@@ -133,25 +134,26 @@ section[data-testid="stSidebar"] input[type="password"] {
 }
 .metric-card {
     background: #FFFFFF;
-    border: 1px solid #E8EFFC;
+    border: 1px solid #E6F4FB;
     border-radius: 14px;
     padding: 18px 20px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 1px 4px rgba(14,74,203,0.06), 0 4px 16px rgba(14,74,203,0.04);
+    box-shadow: 0 1px 4px rgba(26,171,219,0.08), 0 4px 16px rgba(26,171,219,0.04);
     transition: transform 0.15s, box-shadow 0.15s;
     margin-bottom: 12px;
+    text-align: center;
 }
 .metric-card::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #0E4ACB, #3B6FE0);
+    background: linear-gradient(90deg, #1AABDB, #3BBFE8);
     border-radius: 14px 14px 0 0;
 }
 .metric-card.orange::before {
-    background: linear-gradient(90deg, #FF6B35, #FF8C61);
+    background: linear-gradient(90deg, #1AABDB, #3BBFE8);
 }
 .metric-card.green::before {
     background: linear-gradient(90deg, #00C48C, #00E0A3);
@@ -167,7 +169,7 @@ section[data-testid="stSidebar"] input[type="password"] {
 .metric-card .mc-value {
     font-size: 1.9rem;
     font-weight: 800;
-    color: #1A1D2E;
+    color: #1A3A5C;
     line-height: 1.1;
     letter-spacing: -0.02em;
 }
@@ -188,11 +190,11 @@ section[data-testid="stSidebar"] input[type="password"] {
 
 /* ---- PROGRESS BAR ---- */
 .stProgress > div > div > div > div {
-    background: linear-gradient(90deg, #0E4ACB, #3B6FE0) !important;
+    background: linear-gradient(90deg, #1AABDB, #3BBFE8) !important;
     border-radius: 4px !important;
 }
 .stProgress > div > div > div {
-    background: #E8EFFC !important;
+    background: #D6EEF8 !important;
     border-radius: 4px !important;
     height: 8px !important;
 }
@@ -207,7 +209,7 @@ section[data-testid="stSidebar"] input[type="password"] {
 .section-label span.sl-line {
     flex: 1;
     height: 1px;
-    background: #E8EFFC;
+    background: #E6F4FB;
 }
 .section-label span.sl-text {
     font-size: 0.72rem;
@@ -221,7 +223,7 @@ section[data-testid="stSidebar"] input[type="password"] {
 /* ---- AGENT ROWS ---- */
 .agent-card {
     background: #FFFFFF;
-    border: 1px solid #EEF2FF;
+    border: 1px solid #E6F4FB;
     border-radius: 10px;
     padding: 10px 14px;
     margin-bottom: 6px;
@@ -231,7 +233,7 @@ section[data-testid="stSidebar"] input[type="password"] {
     transition: border-color 0.15s;
 }
 .agent-card:hover {
-    border-color: #0E4ACB;
+    border-color: #1AABDB;
 }
 .agent-rank {
     font-size: 1.2rem;
@@ -239,7 +241,7 @@ section[data-testid="stSidebar"] input[type="password"] {
 }
 .agent-name {
     font-weight: 700;
-    color: #1A1D2E;
+    color: #1A3A5C;
     font-size: 0.9rem;
 }
 
@@ -261,8 +263,8 @@ section[data-testid="stSidebar"] input[type="password"] {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: #E8EFFC;
-    color: #0E4ACB;
+    background: #E6F4FB;
+    color: #00AEEF;
     padding: 5px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
@@ -272,30 +274,30 @@ section[data-testid="stSidebar"] input[type="password"] {
 
 /* ---- SIDEBAR PERIOD ---- */
 .sb-period {
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: #E6F4FB;
+    border: 1px solid #DCEEF8;
     border-radius: 10px;
     padding: 10px 12px;
     font-size: 0.82rem;
-    color: rgba(255,255,255,0.9) !important;
+    color: #1A3A5C !important;
     margin: 8px 0;
     text-align: center;
 }
 .sb-summary {
-    background: rgba(255,107,53,0.15);
-    border: 1px solid rgba(255,107,53,0.3);
+    background: #E6F4FB;
+    border: 1px solid #DCEEF8;
     border-radius: 10px;
     padding: 10px 12px;
     font-size: 0.8rem;
-    color: rgba(255,255,255,0.9) !important;
+    color: #1A3A5C !important;
     margin-top: 6px;
     line-height: 1.8;
 }
 
 /* ---- OBJECTIF AGENT BLOCK ---- */
 .agent-recap {
-    background: linear-gradient(135deg, #E8EFFC 0%, #F0F4FF 100%);
-    border: 1px solid #C5D4F5;
+    background: linear-gradient(135deg, #E6F4FB 0%, #F4F9FC 100%);
+    border: 1px solid #DCEEF8;
     border-radius: 14px;
     padding: 20px 24px;
     margin-bottom: 16px;
@@ -303,7 +305,7 @@ section[data-testid="stSidebar"] input[type="password"] {
 .agent-recap h2 {
     font-size: 1.3rem !important;
     font-weight: 800 !important;
-    color: #0E4ACB !important;
+    color: #00AEEF !important;
     margin: 0 0 12px 0 !important;
 }
 
@@ -318,7 +320,7 @@ section[data-testid="stSidebar"] input[type="password"] {
     font-weight: 700;
 }
 .badge-green  { background: #DCFCE7; color: #16A34A; }
-.badge-orange { background: #FFF7ED; color: #EA580C; }
+.badge-orange { background: #E6F4FB; color: #0099D6; }
 .badge-red    { background: #FEE2E2; color: #DC2626; }
 
 /* ---- MAIN TITLE ---- */
@@ -350,7 +352,7 @@ def emoji(p):
     return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
 
 def color_pct(p):
-    return "#00C48C" if p >= 1 else "#FF6B35" if p >= 0.7 else "#FF4757"
+    return "#00C48C" if p >= 1 else "#00AEEF" if p >= 0.7 else "#FF4757"
 
 def round_excel(x):
     return int(x + 0.5 + 1e-9)
@@ -422,7 +424,7 @@ def generate_rapport_png(df_obj_render, dates):
     ax_table.set_facecolor("#FFFFFF")
     ax_table.set_xlim(0, 1); ax_table.set_ylim(0, 1); ax_table.axis("off")
     header_rect = FancyBboxPatch((0, 0.90), 1, 0.10, boxstyle="round,pad=0.005",
-                                 facecolor="#0E4ACB", edgecolor="none",
+                                 facecolor="#00AEEF", edgecolor="none",
                                  transform=ax_table.transAxes, clip_on=False)
     ax_table.add_patch(header_rect)
     if len(dates) == 2:
@@ -449,16 +451,16 @@ def generate_rapport_png(df_obj_render, dates):
                                               boxstyle="square,pad=0", facecolor="#F8FAFF",
                                               edgecolor="none", transform=ax_table.transAxes, clip_on=True))
         pct = d["pct"]
-        cp = "#00C48C" if pct >= 1 else "#FF6B35" if pct >= 0.7 else "#FF4757"
+        cp = "#00C48C" if pct >= 1 else "#00AEEF" if pct >= 0.7 else "#FF4757"
         ax_table.text(col_x[0], y, d["nom"], transform=ax_table.transAxes,
-                      fontsize=8, color="#1A1D2E", va="center", fontweight="500")
+                      fontsize=8, color="#1A3A5C", va="center", fontweight="500")
         ax_table.text(col_x[1], y, f"{d['v_elec']}/{d['obj_elec']}",
                       transform=ax_table.transAxes, fontsize=8, color="#334155", va="center")
         ax_table.text(col_x[2], y, f"{d['v_gaz']}/{d['obj_gaz']}",
                       transform=ax_table.transAxes, fontsize=8, color="#334155", va="center")
         ax_table.text(col_x[3], y, str(d['ventes']),
                       transform=ax_table.transAxes, fontsize=9, fontweight="bold",
-                      color="#0E4ACB", va="center")
+                      color="#00AEEF", va="center")
         ax_table.text(col_x[4], y, str(d['obj']),
                       transform=ax_table.transAxes, fontsize=8, color="#64748B", va="center")
         ax_table.text(col_x[5], y, f"{pct:.0%}",
@@ -466,7 +468,7 @@ def generate_rapport_png(df_obj_render, dates):
                       color=cp, va="center")
         bw = 0.10; bh = row_h * 0.35; bx = col_x[6]
         ax_table.add_patch(FancyBboxPatch((bx, y - bh/2), bw, bh, boxstyle="round,pad=0.002",
-                                          facecolor="#E8EFFC", edgecolor="none",
+                                          facecolor="#E6F4FB", edgecolor="none",
                                           transform=ax_table.transAxes, clip_on=True))
         fw = bw * min(pct, 1.0)
         if fw > 0:
@@ -475,14 +477,14 @@ def generate_rapport_png(df_obj_render, dates):
                                               transform=ax_table.transAxes, clip_on=True))
     ax_chart.set_facecolor("#FAFBFF")
     for s in ["top", "right", "left"]: ax_chart.spines[s].set_visible(False)
-    ax_chart.spines["bottom"].set_color("#E8EFFC")
+    ax_chart.spines["bottom"].set_color("#E6F4FB")
     noms = [d["nom"] for d in fournisseurs_data]
     ventes_vals = [d["ventes"] for d in fournisseurs_data]
     obj_vals = [d["obj"] for d in fournisseurs_data]
     y_pos = range(len(noms))
     bh2 = 0.35
-    ax_chart.barh([y + bh2/2 for y in y_pos], obj_vals, height=bh2, color="#E8EFFC", zorder=2)
-    colors_bars = [("#00C48C" if d["pct"] >= 1 else "#0E4ACB" if d["pct"] >= 0.7 else "#FF6B35")
+    ax_chart.barh([y + bh2/2 for y in y_pos], obj_vals, height=bh2, color="#E6F4FB", zorder=2)
+    colors_bars = [("#00C48C" if d["pct"] >= 1 else "#00AEEF" if d["pct"] >= 0.7 else "#00AEEF")
                    for d in fournisseurs_data]
     ax_chart.barh([y - bh2/2 for y in y_pos], ventes_vals, height=bh2, color=colors_bars, zorder=3)
     ax_chart.set_yticks(list(y_pos)); ax_chart.set_yticklabels(noms, fontsize=8)
@@ -490,10 +492,10 @@ def generate_rapport_png(df_obj_render, dates):
     ax_chart.tick_params(axis="x", labelsize=7, colors="#64748B")
     ax_chart.tick_params(axis="y", labelsize=8, colors="#334155")
     ax_chart.set_title("Ventes vs Objectif par fournisseur", fontsize=10,
-                       fontweight="bold", color="#1A1D2E", pad=8)
-    ax_chart.grid(axis="x", color="#E8EFFC", linewidth=0.8, zorder=1)
-    legend_patches = [mpatches.Patch(color="#0E4ACB", label="Ventes"),
-                      mpatches.Patch(color="#E8EFFC", label="Objectif")]
+                       fontweight="bold", color="#1A3A5C", pad=8)
+    ax_chart.grid(axis="x", color="#E6F4FB", linewidth=0.8, zorder=1)
+    legend_patches = [mpatches.Patch(color="#00AEEF", label="Ventes"),
+                      mpatches.Patch(color="#E6F4FB", label="Objectif")]
     ax_chart.legend(handles=legend_patches, fontsize=8, loc="lower right",
                     framealpha=0.9, edgecolor="#CBD5E1")
     plt.tight_layout(pad=1.2)
@@ -509,11 +511,11 @@ def generate_rapport_png(df_obj_render, dates):
 with st.sidebar:
     # Logo texte stylisé
     st.markdown("""
-    <div style="padding:16px 8px 8px 8px;text-align:center;">
-      <div style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">
+    <div style="padding:16px 8px 8px 8px;text-align:center;border-bottom:1px solid #DCEEF8;">
+      <div style="font-size:1.4rem;font-weight:800;color:#00AEEF;letter-spacing:-0.01em;">
         ⚡ Suivi Commercial
       </div>
-      <div style="font-size:0.72rem;color:rgba(255,255,255,0.55);margin-top:2px;text-transform:uppercase;letter-spacing:0.1em;">
+      <div style="font-size:0.72rem;color:#94A3B8;margin-top:2px;text-transform:uppercase;letter-spacing:0.1em;">
         Tableau de bord
       </div>
     </div>
@@ -562,7 +564,7 @@ if uploaded_file:
             d_start = dates[0].strftime("%d/%m/%Y")
             d_end   = dates[1].strftime("%d/%m/%Y")
             st.markdown(
-                f"<div class='sb-period'>📅 {d_start} &nbsp;→&nbsp; {d_end}</div>",
+                f"<div class='sb-period' style='color:#1A3A5C!important;'>📅 {d_start} &nbsp;→&nbsp; {d_end}</div>",
                 unsafe_allow_html=True
             )
             period_pill = (
@@ -576,7 +578,7 @@ if uploaded_file:
         n_fournisseurs_actifs = len(fournisseurs)
         energie_label = " · ".join(energie) if energie else "—"
         st.markdown(
-            f"<div class='sb-summary'>"
+            f"<div class='sb-summary' style='color:#1A3A5C!important;'>"
             f"👤 <strong>{n_agents_actifs}</strong> agent(s)<br>"
             f"🏢 <strong>{n_fournisseurs_actifs}</strong> fournisseur(s)<br>"
             f"⚡ {energie_label}"
@@ -724,22 +726,22 @@ if uploaded_file:
             v_elec   = int(r.get("v_elec", 0))
             v_gaz    = int(r.get("v_gaz", 0))
             p        = r["ventes"] / r["Objectifs Total"] if r["Objectifs Total"] else 0
-            cp       = "#00C48C" if p >= 1 else "#FF6B35" if p >= 0.7 else "#FF4757"
+            cp       = "#00C48C" if p >= 1 else "#00AEEF" if p >= 0.7 else "#FF4757"
             cp_bg    = "#DCFCE7" if p >= 1 else "#FFF7ED" if p >= 0.7 else "#FEE2E2"
             pct_fill = min(p * 100, 100)
             bg       = "#F8FAFF" if i % 2 == 0 else "#FFFFFF"
 
             table_html_rows += f"""
-            <tr style="background:{bg};transition:background 0.15s;" onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='{bg}'">
-              <td style="padding:7px 12px;font-weight:600;color:#1A1D2E;font-size:13px;">{r['Fournisseur']}</td>
+            <tr style="background:{bg};transition:background 0.15s;" onmouseover="this.style.background='#E6F4FB'" onmouseout="this.style.background='{bg}'">
+              <td style="padding:7px 12px;font-weight:600;color:#1A3A5C;font-size:13px;">{r['Fournisseur']}</td>
               <td style="padding:7px 12px;text-align:center;color:#334155;font-size:13px;">⚡ <strong>{v_elec}</strong><span style='color:#94A3B8'>/{obj_elec}</span></td>
               <td style="padding:7px 12px;text-align:center;color:#334155;font-size:13px;">🔥 <strong>{v_gaz}</strong><span style='color:#94A3B8'>/{obj_gaz}</span></td>
-              <td style="padding:7px 12px;text-align:center;font-size:14px;"><strong style='color:#0E4ACB'>{int(r['ventes'])}</strong><span style='color:#94A3B8;font-size:12px'>/{int(r['Objectifs Total'])}</span></td>
+              <td style="padding:7px 12px;text-align:center;font-size:14px;"><strong style='color:#00AEEF'>{int(r['ventes'])}</strong><span style='color:#94A3B8;font-size:12px'>/{int(r['Objectifs Total'])}</span></td>
               <td style="padding:7px 12px;text-align:center;">
                 <span style="background:{cp_bg};color:{cp};padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">{p:.0%}</span>
               </td>
               <td style="padding:7px 14px;width:140px;">
-                <div style="background:#E8EFFC;border-radius:6px;height:8px;width:100%;overflow:hidden;">
+                <div style="background:#E6F4FB;border-radius:6px;height:8px;width:100%;overflow:hidden;">
                   <div style="background:linear-gradient(90deg,{cp},{cp}cc);border-radius:6px;height:8px;width:{pct_fill:.1f}%;transition:width 0.4s;"></div>
                 </div>
               </td>
@@ -757,8 +759,8 @@ if uploaded_file:
   .btn-bar {{ display:{show_buttons}; gap:8px; justify-content:flex-end; margin-bottom:10px; }}
   .btn-x {{ padding:7px 16px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:opacity .15s; font-family:'Inter',sans-serif; }}
   .btn-x:hover {{ opacity:0.85; }}
-  .btn-dl {{ background:linear-gradient(135deg,#0E4ACB,#3B6FE0); color:#fff; }}
-  .btn-cp {{ background:#FFFFFF; color:#0E4ACB; border:1.5px solid #0E4ACB; }}
+  .btn-dl {{ background:linear-gradient(135deg,#00AEEF,#33C1F3); color:#fff; }}
+  .btn-cp {{ background:#FFFFFF; color:#00AEEF; border:1.5px solid #00AEEF; }}
 </style>
 
 <div class="btn-bar">
@@ -766,8 +768,8 @@ if uploaded_file:
   <button class="btn-x btn-dl" onclick="doCapture('download')">⬇️ Télécharger PNG</button>
 </div>
 
-<div id="rapport-table" style="background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E8EFFC;box-shadow:0 4px 20px rgba(14,74,203,0.08);">
-  <div style="background:linear-gradient(135deg,#0A3499,#0E4ACB);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
+<div id="rapport-table" style="background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E6F4FB;box-shadow:0 4px 20px rgba(14,74,203,0.08);">
+  <div style="background:linear-gradient(135deg,#005F8E,#00AEEF);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
     <div>
       <div style="color:#fff;font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;font-family:'Inter',sans-serif;">Rapport Ventes</div>
       <div style="color:#fff;font-size:14px;font-weight:700;margin-top:2px;font-family:'Inter',sans-serif;">Détail par fournisseur</div>
@@ -779,7 +781,7 @@ if uploaded_file:
   </div>
   <table style="width:100%;border-collapse:collapse;font-family:'Inter',sans-serif;">
     <thead>
-      <tr style="background:#F4F6FA;border-bottom:2px solid #E8EFFC;">
+      <tr style="background:#F4F6FA;border-bottom:2px solid #E6F4FB;">
         <th style="padding:9px 12px;text-align:left;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Fournisseur</th>
         <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Elec</th>
         <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Gaz</th>
@@ -900,7 +902,7 @@ function doCapture(action) {{
                 c1.markdown(f"<div style='font-size:1.2rem;text-align:center;padding-top:4px'>{badge}</div>",
                             unsafe_allow_html=True)
                 c2.markdown(
-                    f"<div style='font-weight:700;color:#1A1D2E;font-size:0.9rem;padding-top:6px'>{r['agent']}</div>"
+                    f"<div style='font-weight:700;color:#1A3A5C;font-size:0.9rem;padding-top:6px'>{r['agent']}</div>"
                     f"<div style='margin-top:2px'>{sb}</div>",
                     unsafe_allow_html=True
                 )
@@ -908,7 +910,7 @@ function doCapture(action) {{
                 c4.markdown(
                     f"<div style='font-size:0.85rem;color:#334155;padding-top:4px'>"
                     f"⚡ <strong>{v_elec}</strong> &nbsp; 🔥 <strong>{v_gaz}</strong>"
-                    f" &nbsp;&nbsp; 🎯 <strong style='color:#0E4ACB'>{v_total}</strong>"
+                    f" &nbsp;&nbsp; 🎯 <strong style='color:#00AEEF'>{v_total}</strong>"
                     f"<span style='color:#94A3B8'>/{obj_agent}</span>"
                     f" &nbsp; <strong style='color:{cp}'>{taux:.0%}</strong>"
                     f"</div>",
@@ -1000,17 +1002,14 @@ function doCapture(action) {{
 
             with st.container():
                 st.markdown("<div class='provider-row'>", unsafe_allow_html=True)
-                c1, c2, c3, c4 = st.columns([2, 1, 5, 4])
+                c1, c2, c3 = st.columns([2, 4, 5])
                 c1.markdown(
-                    f"<div style='font-weight:700;color:#1A1D2E;font-size:0.88rem;padding-top:6px'>{f}</div>",
+                    f"<div style='font-weight:700;color:#1A3A5C;font-size:0.88rem;padding-top:6px'>{f}</div>"
+                    f"<div style='margin-top:3px'>{status_badge(p)}</div>",
                     unsafe_allow_html=True
                 )
-                c2.markdown(
-                    f"<div style='padding-top:4px'>{status_badge(p)}</div>",
-                    unsafe_allow_html=True
-                )
-                c3.progress(min(p, 1.0))
-                c4.markdown(
+                c2.progress(min(p, 1.0))
+                c3.markdown(
                     f"<div style='font-size:0.83rem;color:#334155;padding-top:4px'>"
                     f"⚡ <strong>{v_elec}</strong><span style='color:#94A3B8'>/{obj_elec_f}</span>"
                     f" &nbsp; 🔥 <strong>{v_gaz}</strong><span style='color:#94A3B8'>/{obj_gaz_f}</span>"
@@ -1028,15 +1027,15 @@ else:
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
                 min-height:60vh;text-align:center;padding:40px;">
       <div style="font-size:3rem;margin-bottom:16px;">⚡</div>
-      <h1 style="font-size:1.8rem;font-weight:800;color:#1A1D2E;margin-bottom:8px;">
+      <h1 style="font-size:1.8rem;font-weight:800;color:#1A3A5C;margin-bottom:8px;">
         Tableau de bord commercial
       </h1>
       <p style="color:#64748B;font-size:1rem;max-width:400px;line-height:1.6;">
         Connectez-vous en tant qu'administrateur dans la barre latérale
         pour charger le fichier de données.
       </p>
-      <div style="margin-top:24px;background:#E8EFFC;border-radius:12px;padding:16px 24px;
-                  color:#0E4ACB;font-size:0.85rem;font-weight:600;">
+      <div style="margin-top:24px;background:#E6F4FB;border-radius:12px;padding:16px 24px;
+                  color:#00AEEF;font-size:0.85rem;font-weight:600;">
         🔐 Panneau Admin → dans la sidebar
       </div>
     </div>
