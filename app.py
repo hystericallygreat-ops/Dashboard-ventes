@@ -13,121 +13,344 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch
 
-st.set_page_config(page_title="Dashboard", layout="wide")
+st.set_page_config(
+    page_title="Suivi Commercial",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # ================================================================
-# CSS
+# PALETTE — inspirée site énergie bleu/orange
 # ================================================================
-st.markdown("""
-<style>
+# Bleu principal : #0E4ACB  Bleu foncé : #0A3499  Bleu clair : #E8EFFC
+# Orange accent  : #FF6B35  Orange clair : #FFF0EB
+# Vert succès    : #00C48C  Rouge danger : #FF4757  Jaune warning: #FFB300
+# Gris texte     : #1A1D2E  Gris moyen : #64748B   Gris clair : #F4F6FA
+# ================================================================
+
+CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ---- RESET GLOBAL ---- */
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+.main .block-container {
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+    max-width: 1400px;
+}
+
+/* ---- SIDEBAR SOMBRE PRO ---- */
 section[data-testid="stSidebar"] {
-    background-color: #E2E8F0;
+    background: linear-gradient(180deg, #0A3499 0%, #0E4ACB 60%, #1a5fd4 100%) !important;
+    border-right: none !important;
 }
-[data-baseweb="tag"] {
-    background-color: #BFDBFE !important;
-    color: #1E3A8A !important;
+section[data-testid="stSidebar"] * {
+    color: #ffffff !important;
 }
-.stProgress > div > div > div > div {
-    background-color:#0F8BC6;
+section[data-testid="stSidebar"] .stRadio label {
+    color: rgba(255,255,255,0.85) !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+    transition: background 0.15s !important;
 }
-.block {
-    padding: 12px;
-    border-radius: 10px;
-    background-color: #F8FAFC;
-    border: 1px solid #CBD5E1;
-    margin-bottom: 12px;
+section[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(255,255,255,0.12) !important;
 }
-h1, h2, h3 {
-    margin-top: 10px !important;
-    margin-bottom: 10px !important;
+section[data-testid="stSidebar"] [data-baseweb="radio"] input:checked + div {
+    background: rgba(255,255,255,0.18) !important;
+    border-radius: 6px !important;
+}
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] .stMarkdown h3 {
+    color: rgba(255,255,255,0.55) !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+    margin-top: 1rem !important;
+}
+section[data-testid="stSidebar"] .stMultiSelect > div,
+section[data-testid="stSidebar"] .stDateInput > div,
+section[data-testid="stSidebar"] .stTextInput > div {
+    background: rgba(255,255,255,0.1) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    border-radius: 8px !important;
+}
+section[data-testid="stSidebar"] [data-baseweb="tag"] {
+    background: rgba(255,107,53,0.85) !important;
+    color: #fff !important;
+    border-radius: 4px !important;
+}
+section[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.15) !important;
+    margin: 12px 0 !important;
+}
+section[data-testid="stSidebar"] input[type="password"] {
+    background: rgba(255,255,255,0.1) !important;
+    color: white !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+}
+
+/* ---- PAGE HEADER ---- */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #E8EFFC;
+}
+.page-header-left h1 {
+    font-size: 1.6rem !important;
+    font-weight: 800 !important;
+    color: #1A1D2E !important;
+    margin: 0 !important;
+    letter-spacing: -0.02em;
+}
+.page-header-left p {
+    color: #64748B;
+    font-size: 0.85rem;
+    margin: 2px 0 0 0;
+}
+.page-badge {
+    background: linear-gradient(135deg, #0E4ACB, #3B6FE0);
+    color: white !important;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+/* ---- METRIC CARDS ---- */
+.kpi-grid {
+    display: grid;
+    gap: 1px;
 }
 .metric-card {
-    background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
-    border: 1px solid #BAE6FD;
-    border-radius: 12px;
-    padding: 14px 16px;
-    text-align: center;
+    background: #FFFFFF;
+    border: 1px solid #E8EFFC;
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(14,74,203,0.06), 0 4px 16px rgba(14,74,203,0.04);
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin-bottom: 12px;
+}
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0E4ACB, #3B6FE0);
+    border-radius: 14px 14px 0 0;
+}
+.metric-card.orange::before {
+    background: linear-gradient(90deg, #FF6B35, #FF8C61);
+}
+.metric-card.green::before {
+    background: linear-gradient(90deg, #00C48C, #00E0A3);
+}
+.metric-card.red::before {
+    background: linear-gradient(90deg, #FF4757, #FF6B78);
+}
+.metric-card .mc-icon {
+    font-size: 1.4rem;
     margin-bottom: 8px;
+    display: block;
 }
-.metric-card .metric-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #0369A1;
-    line-height: 1.2;
+.metric-card .mc-value {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: #1A1D2E;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
 }
-.metric-card .metric-label {
-    font-size: 0.75rem;
-    color: #64748B;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.agent-row {
-    background-color: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 6px 12px;
-    margin-bottom: 4px;
-}
-.agent-row-alt {
-    background-color: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 6px 12px;
-    margin-bottom: 4px;
-}
-.top-badge {
-    font-size: 1.1rem;
-    font-weight: 700;
-    display: inline-block;
-    margin-right: 6px;
-}
-.period-banner {
-    background-color: #EFF6FF;
-    border-left: 4px solid #3B82F6;
-    border-radius: 0 8px 8px 0;
-    padding: 8px 16px;
-    margin-bottom: 16px;
-    color: #1E40AF;
-    font-size: 0.9rem;
-}
-.section-title {
-    font-size: 0.85rem;
+.metric-card .mc-label {
+    font-size: 0.72rem;
     font-weight: 600;
     color: #94A3B8;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 4px;
-    margin-top: 12px;
+    margin-top: 6px;
 }
-.fournisseur-row {
-    border-bottom: 1px solid #F1F5F9;
-    padding: 3px 0;
+.metric-card .mc-sub {
+    font-size: 0.78rem;
+    color: #64748B;
+    margin-top: 4px;
+    font-weight: 500;
 }
-.fournisseur-row:last-child {
-    border-bottom: none;
+
+/* ---- PROGRESS BAR ---- */
+.stProgress > div > div > div > div {
+    background: linear-gradient(90deg, #0E4ACB, #3B6FE0) !important;
+    border-radius: 4px !important;
 }
-.filter-summary {
-    background-color: #DBEAFE;
-    border-radius: 8px;
+.stProgress > div > div > div {
+    background: #E8EFFC !important;
+    border-radius: 4px !important;
+    height: 8px !important;
+}
+
+/* ---- SECTION LABEL ---- */
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 10px 0;
+}
+.section-label span.sl-line {
+    flex: 1;
+    height: 1px;
+    background: #E8EFFC;
+}
+.section-label span.sl-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94A3B8;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+}
+
+/* ---- AGENT ROWS ---- */
+.agent-card {
+    background: #FFFFFF;
+    border: 1px solid #EEF2FF;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(14,74,203,0.04);
+    transition: border-color 0.15s;
+}
+.agent-card:hover {
+    border-color: #0E4ACB;
+}
+.agent-rank {
+    font-size: 1.2rem;
+    min-width: 32px;
+}
+.agent-name {
+    font-weight: 700;
+    color: #1A1D2E;
+    font-size: 0.9rem;
+}
+
+/* ---- PROVIDER ROWS ---- */
+.provider-row {
+    background: #FFFFFF;
+    border: 1px solid #F1F5F9;
+    border-radius: 10px;
+    padding: 8px 14px;
+    margin-bottom: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.provider-row:nth-child(even) {
+    background: #F8FAFF;
+}
+
+/* ---- PERIOD BANNER ---- */
+.period-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #E8EFFC;
+    color: #0E4ACB;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+/* ---- SIDEBAR PERIOD ---- */
+.sb-period {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.9) !important;
+    margin: 8px 0;
+    text-align: center;
+}
+.sb-summary {
+    background: rgba(255,107,53,0.15);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 10px;
     padding: 10px 12px;
     font-size: 0.8rem;
-    color: #1E3A8A;
-    margin-top: 8px;
+    color: rgba(255,255,255,0.9) !important;
+    margin-top: 6px;
+    line-height: 1.8;
+}
+
+/* ---- OBJECTIF AGENT BLOCK ---- */
+.agent-recap {
+    background: linear-gradient(135deg, #E8EFFC 0%, #F0F4FF 100%);
+    border: 1px solid #C5D4F5;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+}
+.agent-recap h2 {
+    font-size: 1.3rem !important;
+    font-weight: 800 !important;
+    color: #0E4ACB !important;
+    margin: 0 0 12px 0 !important;
+}
+
+/* ---- STATUS BADGE ---- */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.badge-green  { background: #DCFCE7; color: #16A34A; }
+.badge-orange { background: #FFF7ED; color: #EA580C; }
+.badge-red    { background: #FEE2E2; color: #DC2626; }
+
+/* ---- MAIN TITLE ---- */
+h1, h2, h3 { margin-top: 8px !important; margin-bottom: 8px !important; }
+.stButton button {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
 }
 </style>
-""", unsafe_allow_html=True)
+"""
+
+st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
 SAVE_PATH = "last_uploaded.xlsx"
 
 # ================================================================
-# UTILS
+# UTILS — inchangés
 # ================================================================
 def clean_text(col):
     return col.astype(str).str.strip().str.replace('"','').str.replace("'","").str.upper()
 
+def status_badge(p):
+    if p >= 1:   return "<span class='status-badge badge-green'>● Objectif atteint</span>"
+    if p >= 0.7: return "<span class='status-badge badge-orange'>● En cours</span>"
+    return              "<span class='status-badge badge-red'>● Sous objectif</span>"
+
 def emoji(p):
     return "🟢" if p >= 1 else "🟠" if p >= 0.7 else "🔴"
+
+def color_pct(p):
+    return "#00C48C" if p >= 1 else "#FF6B35" if p >= 0.7 else "#FF4757"
 
 def round_excel(x):
     return int(x + 0.5 + 1e-9)
@@ -145,6 +368,25 @@ def ensure_energie_cols(df_pivot):
             df_pivot[col] = 0
     return df_pivot
 
+def section_label(text):
+    return (
+        f"<div class='section-label'>"
+        f"<span class='sl-line'></span>"
+        f"<span class='sl-text'>{text}</span>"
+        f"<span class='sl-line'></span>"
+        f"</div>"
+    )
+
+def metric_card(icon, value, label, sub="", color="blue"):
+    return (
+        f"<div class='metric-card {color}'>"
+        f"<span class='mc-icon'>{icon}</span>"
+        f"<div class='mc-value'>{value}</div>"
+        f"<div class='mc-label'>{label}</div>"
+        f"{'<div class=mc-sub>' + sub + '</div>' if sub else ''}"
+        f"</div>"
+    )
+
 @st.cache_data
 def load_data(path):
     xls = pd.ExcelFile(path)
@@ -154,7 +396,7 @@ def load_data(path):
     return df, code, objectifs
 
 # ================================================================
-# GÉNÉRATION PNG RAPPORT
+# GÉNÉRATION PNG — matplotlib (inchangé, utilisé si besoin futur)
 # ================================================================
 def generate_rapport_png(df_obj_render, dates):
     fournisseurs_data = []
@@ -170,160 +412,118 @@ def generate_rapport_png(df_obj_render, dates):
             "obj_gaz": int(r.get("obj_gaz", 0)),
             "pct": p,
         })
-
     n = len(fournisseurs_data)
     fig_height = 3.5 + n * 0.52 + 4.5
-    fig, axes = plt.subplots(
-        2, 1,
-        figsize=(13, fig_height),
-        gridspec_kw={"height_ratios": [n * 0.52 + 3.5, 4.5]},
-        facecolor="#FFFFFF"
-    )
+    fig, axes = plt.subplots(2, 1, figsize=(13, fig_height),
+                             gridspec_kw={"height_ratios": [n * 0.52 + 3.5, 4.5]},
+                             facecolor="#FFFFFF")
     ax_table = axes[0]
     ax_chart = axes[1]
-
-    # Header
     ax_table.set_facecolor("#FFFFFF")
-    ax_table.set_xlim(0, 1)
-    ax_table.set_ylim(0, 1)
-    ax_table.axis("off")
-
-    header_rect = FancyBboxPatch(
-        (0, 0.90), 1, 0.10,
-        boxstyle="round,pad=0.005",
-        facecolor="#0F8BC6", edgecolor="none",
-        transform=ax_table.transAxes, clip_on=False
-    )
+    ax_table.set_xlim(0, 1); ax_table.set_ylim(0, 1); ax_table.axis("off")
+    header_rect = FancyBboxPatch((0, 0.90), 1, 0.10, boxstyle="round,pad=0.005",
+                                 facecolor="#0E4ACB", edgecolor="none",
+                                 transform=ax_table.transAxes, clip_on=False)
     ax_table.add_patch(header_rect)
-    ax_table.text(0.02, 0.945, "Dashboard", transform=ax_table.transAxes,
-                  fontsize=15, fontweight="bold", color="white", va="center")
-
     if len(dates) == 2:
         periode_str = f"Période : {dates[0].strftime('%d/%m/%Y')} → {dates[1].strftime('%d/%m/%Y')}"
     else:
         periode_str = f"Généré le {datetime.today().strftime('%d/%m/%Y')}"
-
+    ax_table.text(0.02, 0.945, "Rapport Ventes", transform=ax_table.transAxes,
+                  fontsize=13, fontweight="bold", color="white", va="center")
     ax_table.text(0.98, 0.945, periode_str, transform=ax_table.transAxes,
-                  fontsize=9, color="white", va="center", ha="right")
-
+                  fontsize=9, color="rgba(255,255,255,0.8)", va="center", ha="right")
     col_x = [0.01, 0.22, 0.39, 0.54, 0.69, 0.79, 0.89]
-    col_labels = ["Fournisseur", "⚡ Elec", "🔥 Gaz", "🎯 Total", "Obj", "Taux", "Barre"]
+    col_labels = ["Fournisseur", "⚡ Elec", "🔥 Gaz", "🎯 Total", "Obj.", "Taux", "Progression"]
     header_y = 0.86
-
     for cx, cl in zip(col_x, col_labels):
         ax_table.text(cx, header_y, cl, transform=ax_table.transAxes,
-                      fontsize=8.5, fontweight="bold", color="#334155", va="center")
-
-    ax_table.plot(
-        [0, 1], [header_y - 0.022, header_y - 0.022],
-        color="#CBD5E1", linewidth=1, transform=ax_table.transAxes, clip_on=False
-    )
-
+                      fontsize=8, fontweight="bold", color="#334155", va="center")
+    ax_table.plot([0, 1], [header_y - 0.022, header_y - 0.022],
+                  color="#CBD5E1", linewidth=1, transform=ax_table.transAxes, clip_on=False)
     row_h = (0.86 - 0.05) / max(n, 1)
-
     for i, d in enumerate(fournisseurs_data):
         y = header_y - 0.045 - i * row_h
         if i % 2 == 0:
-            bg = FancyBboxPatch(
-                (0, y - row_h * 0.45), 1, row_h * 0.90,
-                boxstyle="square,pad=0",
-                facecolor="#F8FAFC", edgecolor="none",
-                transform=ax_table.transAxes, clip_on=True
-            )
-            ax_table.add_patch(bg)
-
+            ax_table.add_patch(FancyBboxPatch((0, y - row_h * 0.45), 1, row_h * 0.90,
+                                              boxstyle="square,pad=0", facecolor="#F8FAFF",
+                                              edgecolor="none", transform=ax_table.transAxes, clip_on=True))
         pct = d["pct"]
-        color_pct = "#16A34A" if pct >= 1 else "#EA580C" if pct >= 0.7 else "#DC2626"
-
+        cp = "#00C48C" if pct >= 1 else "#FF6B35" if pct >= 0.7 else "#FF4757"
         ax_table.text(col_x[0], y, d["nom"], transform=ax_table.transAxes,
-                      fontsize=8, color="#1E293B", va="center", fontweight="500")
+                      fontsize=8, color="#1A1D2E", va="center", fontweight="500")
         ax_table.text(col_x[1], y, f"{d['v_elec']}/{d['obj_elec']}",
                       transform=ax_table.transAxes, fontsize=8, color="#334155", va="center")
         ax_table.text(col_x[2], y, f"{d['v_gaz']}/{d['obj_gaz']}",
                       transform=ax_table.transAxes, fontsize=8, color="#334155", va="center")
-        ax_table.text(col_x[3], y, f"{d['ventes']}",
-                      transform=ax_table.transAxes, fontsize=8.5, fontweight="bold",
-                      color="#0F172A", va="center")
-        ax_table.text(col_x[4], y, f"{d['obj']}",
+        ax_table.text(col_x[3], y, str(d['ventes']),
+                      transform=ax_table.transAxes, fontsize=9, fontweight="bold",
+                      color="#0E4ACB", va="center")
+        ax_table.text(col_x[4], y, str(d['obj']),
                       transform=ax_table.transAxes, fontsize=8, color="#64748B", va="center")
         ax_table.text(col_x[5], y, f"{pct:.0%}",
                       transform=ax_table.transAxes, fontsize=9, fontweight="bold",
-                      color=color_pct, va="center")
-
-        bar_x_start = col_x[6]
-        bar_width = 0.10
-        bar_h = row_h * 0.35
-        ax_table.add_patch(FancyBboxPatch(
-            (bar_x_start, y - bar_h / 2), bar_width, bar_h,
-            boxstyle="round,pad=0.002", facecolor="#E2E8F0", edgecolor="none",
-            transform=ax_table.transAxes, clip_on=True
-        ))
-        fill_w = bar_width * min(pct, 1.0)
-        if fill_w > 0:
-            ax_table.add_patch(FancyBboxPatch(
-                (bar_x_start, y - bar_h / 2), fill_w, bar_h,
-                boxstyle="round,pad=0.002", facecolor=color_pct, edgecolor="none",
-                transform=ax_table.transAxes, clip_on=True
-            ))
-
-    # Graphique
-    ax_chart.set_facecolor("#FAFAFA")
-    ax_chart.spines["top"].set_visible(False)
-    ax_chart.spines["right"].set_visible(False)
-    ax_chart.spines["left"].set_color("#E2E8F0")
-    ax_chart.spines["bottom"].set_color("#E2E8F0")
-
+                      color=cp, va="center")
+        bw = 0.10; bh = row_h * 0.35; bx = col_x[6]
+        ax_table.add_patch(FancyBboxPatch((bx, y - bh/2), bw, bh, boxstyle="round,pad=0.002",
+                                          facecolor="#E8EFFC", edgecolor="none",
+                                          transform=ax_table.transAxes, clip_on=True))
+        fw = bw * min(pct, 1.0)
+        if fw > 0:
+            ax_table.add_patch(FancyBboxPatch((bx, y - bh/2), fw, bh, boxstyle="round,pad=0.002",
+                                              facecolor=cp, edgecolor="none",
+                                              transform=ax_table.transAxes, clip_on=True))
+    ax_chart.set_facecolor("#FAFBFF")
+    for s in ["top", "right", "left"]: ax_chart.spines[s].set_visible(False)
+    ax_chart.spines["bottom"].set_color("#E8EFFC")
     noms = [d["nom"] for d in fournisseurs_data]
     ventes_vals = [d["ventes"] for d in fournisseurs_data]
     obj_vals = [d["obj"] for d in fournisseurs_data]
     y_pos = range(len(noms))
-    bar_h_chart = 0.35
-
-    ax_chart.barh([y + bar_h_chart / 2 for y in y_pos], obj_vals,
-                  height=bar_h_chart, color="#E2E8F0", label="Objectif", zorder=2)
-
-    colors_bars = [
-        "#16A34A" if d["pct"] >= 1 else "#0F8BC6" if d["pct"] >= 0.7 else "#F97316"
-        for d in fournisseurs_data
-    ]
-    ax_chart.barh([y - bar_h_chart / 2 for y in y_pos], ventes_vals,
-                  height=bar_h_chart, color=colors_bars, label="Ventes", zorder=3)
-
-    ax_chart.set_yticks(list(y_pos))
-    ax_chart.set_yticklabels(noms, fontsize=8)
+    bh2 = 0.35
+    ax_chart.barh([y + bh2/2 for y in y_pos], obj_vals, height=bh2, color="#E8EFFC", zorder=2)
+    colors_bars = [("#00C48C" if d["pct"] >= 1 else "#0E4ACB" if d["pct"] >= 0.7 else "#FF6B35")
+                   for d in fournisseurs_data]
+    ax_chart.barh([y - bh2/2 for y in y_pos], ventes_vals, height=bh2, color=colors_bars, zorder=3)
+    ax_chart.set_yticks(list(y_pos)); ax_chart.set_yticklabels(noms, fontsize=8)
     ax_chart.set_xlabel("Nombre de ventes", fontsize=8, color="#64748B")
     ax_chart.tick_params(axis="x", labelsize=7, colors="#64748B")
     ax_chart.tick_params(axis="y", labelsize=8, colors="#334155")
     ax_chart.set_title("Ventes vs Objectif par fournisseur", fontsize=10,
-                       fontweight="bold", color="#1E293B", pad=8)
-    ax_chart.grid(axis="x", color="#E2E8F0", linewidth=0.8, zorder=1)
-
-    legend_patches = [
-        mpatches.Patch(color="#0F8BC6", label="Ventes"),
-        mpatches.Patch(color="#E2E8F0", label="Objectif"),
-    ]
+                       fontweight="bold", color="#1A1D2E", pad=8)
+    ax_chart.grid(axis="x", color="#E8EFFC", linewidth=0.8, zorder=1)
+    legend_patches = [mpatches.Patch(color="#0E4ACB", label="Ventes"),
+                      mpatches.Patch(color="#E8EFFC", label="Objectif")]
     ax_chart.legend(handles=legend_patches, fontsize=8, loc="lower right",
-                    framealpha=0.8, edgecolor="#CBD5E1")
-
+                    framealpha=0.9, edgecolor="#CBD5E1")
     plt.tight_layout(pad=1.2)
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight", facecolor="#FFFFFF")
-    plt.close(fig)
-    buf.seek(0)
+    plt.close(fig); buf.seek(0)
     return buf.getvalue()
 
 
 # ================================================================
-# HEADER
+# SIDEBAR
 # ================================================================
-st.title("Dashboard")
-st.markdown("<br>", unsafe_allow_html=True)
+with st.sidebar:
+    # Logo texte stylisé
+    st.markdown("""
+    <div style="padding:16px 8px 8px 8px;text-align:center;">
+      <div style="font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">
+        ⚡ Suivi Commercial
+      </div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.55);margin-top:2px;text-transform:uppercase;letter-spacing:0.1em;">
+        Tableau de bord
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-# ================================================================
-# SIDEBAR — Navigation
-# ================================================================
-page = st.sidebar.radio("Navigation", ["📊 Dashboard", "👤 Agents", "🎯 Objectifs"])
-st.sidebar.markdown("---")
+    st.markdown("---")
+
+    page = st.radio("", ["📊 Dashboard", "👤 Agents", "🎯 Objectifs"], label_visibility="collapsed")
+
+    st.markdown("---")
 
 uploaded_file = None
 if os.path.exists(SAVE_PATH):
@@ -350,62 +550,58 @@ if uploaded_file:
 
     USER_COL = "user id"
 
-    # ---- FILTRES ----
-    st.sidebar.markdown("### 🔎 Filtres")
-    agents = st.sidebar.multiselect("Agents", df["agent"].unique(), df["agent"].unique())
-    fournisseurs = st.sidebar.multiselect("Fournisseurs", df["get_provider"].unique(), df["get_provider"].unique())
-    energie = st.sidebar.multiselect("Énergie", df["energie"].unique(), df["energie"].unique())
-    min_d, max_d = df["date"].min(), df["date"].max()
-    dates = st.sidebar.date_input("Période", [min_d, max_d])
+    with st.sidebar:
+        st.markdown("### 🔎 Filtres")
+        agents = st.multiselect("Agents", df["agent"].unique(), df["agent"].unique())
+        fournisseurs = st.multiselect("Fournisseurs", df["get_provider"].unique(), df["get_provider"].unique())
+        energie = st.multiselect("Énergie", df["energie"].unique(), df["energie"].unique())
+        min_d, max_d = df["date"].min(), df["date"].max()
+        dates = st.date_input("Période", [min_d, max_d])
 
-    # ---- MODIFICATION 1 : BANNIÈRE PÉRIODE juste après les filtres ----
-    if len(dates) == 2:
-        d_start = dates[0].strftime("%d/%m/%Y")
-        d_end = dates[1].strftime("%d/%m/%Y")
-        st.sidebar.markdown(
-            f"<div class='period-banner' style='margin-top:8px;'>"
-            f"📅 <strong>{d_start}</strong> → <strong>{d_end}</strong>"
+        if len(dates) == 2:
+            d_start = dates[0].strftime("%d/%m/%Y")
+            d_end   = dates[1].strftime("%d/%m/%Y")
+            st.markdown(
+                f"<div class='sb-period'>📅 {d_start} &nbsp;→&nbsp; {d_end}</div>",
+                unsafe_allow_html=True
+            )
+            period_pill = (
+                f"<div class='period-pill'>📅 {d_start} → {d_end}</div>"
+            )
+        else:
+            d_start, d_end = "", ""
+            period_pill = ""
+
+        n_agents_actifs = len(agents)
+        n_fournisseurs_actifs = len(fournisseurs)
+        energie_label = " · ".join(energie) if energie else "—"
+        st.markdown(
+            f"<div class='sb-summary'>"
+            f"👤 <strong>{n_agents_actifs}</strong> agent(s)<br>"
+            f"🏢 <strong>{n_fournisseurs_actifs}</strong> fournisseur(s)<br>"
+            f"⚡ {energie_label}"
             f"</div>",
             unsafe_allow_html=True
         )
-        period_html = (
-            f"<div class='period-banner'>📅 Période active : "
-            f"<strong>{d_start}</strong> → <strong>{d_end}</strong></div>"
-        )
-    else:
-        d_start, d_end = "", ""
-        period_html = ""
 
-    # ---- RÉSUMÉ FILTRES ----
-    n_agents_actifs = len(agents)
-    n_fournisseurs_actifs = len(fournisseurs)
-    energie_label = " + ".join(energie) if energie else "—"
-    st.sidebar.markdown(
-        f"<div class='filter-summary'>"
-        f"👤 {n_agents_actifs} agent(s)<br>"
-        f"🏢 {n_fournisseurs_actifs} fournisseur(s)<br>"
-        f"⚡ {energie_label}"
-        f"</div>",
-        unsafe_allow_html=True
-    )
-
-    # ---- MODIFICATION 1 : ADMIN tout en bas ----
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔐 Admin")
-    password = st.sidebar.text_input("Mot de passe", type="password")
-    is_admin = password == "hello123"
-    if is_admin:
-        uploaded_file_admin = st.sidebar.file_uploader("Uploader fichier Excel", type=["xlsx"])
-        if uploaded_file_admin:
-            with open(SAVE_PATH, "wb") as f:
-                f.write(uploaded_file_admin.getbuffer())
-            load_data.clear()
-            st.rerun()
-        if os.path.exists(SAVE_PATH):
-            if st.sidebar.button("🗑 Supprimer"):
-                os.remove(SAVE_PATH)
+        st.markdown("---")
+        st.markdown("### 🔐 Admin")
+        password = st.text_input("Mot de passe", type="password")
+        is_admin = password == "hello123"
+        if is_admin:
+            uploaded_file_admin = st.file_uploader("Uploader fichier Excel", type=["xlsx"])
+            if uploaded_file_admin:
+                with open(SAVE_PATH, "wb") as f:
+                    f.write(uploaded_file_admin.getbuffer())
                 load_data.clear()
                 st.rerun()
+            if os.path.exists(SAVE_PATH):
+                if st.button("🗑 Supprimer le fichier"):
+                    os.remove(SAVE_PATH)
+                    load_data.clear()
+                    st.rerun()
+
+    # ---- FILTRE ----
     df_filtered = df[
         df["agent"].isin(agents) &
         df["get_provider"].isin(fournisseurs) &
@@ -418,73 +614,89 @@ if uploaded_file:
         ]
 
     objectif_total = objectifs["Objectifs Total"].sum()
+    jours = get_working_days()
 
     # ================================================================
     # PAGE DASHBOARD
     # ================================================================
     if page == "📊 Dashboard":
 
-        st.header("🏢 Objectifs Globaux")
-        st.markdown(period_html, unsafe_allow_html=True)
+        st.markdown("""
+        <div class='page-header'>
+          <div class='page-header-left'>
+            <h1>Objectifs Globaux</h1>
+            <p>Suivi en temps réel des performances commerciales</p>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # ---- MODIFICATION 2 : 6 cartes métriques ----
-        total_ventes = len(df_filtered)
-        total_obj = int(objectifs["Objectifs Total"].sum())
-        total_obj_elec = int(objectifs["Objectif Elec"].sum())
-        total_obj_gaz = int(objectifs["Objectif Gaz"].sum())
+        st.markdown(period_pill, unsafe_allow_html=True)
 
-        v_elec_global = len(df_filtered[df_filtered["energie"] == "ELEC"])
-        v_gaz_global = len(df_filtered[df_filtered["energie"] == "GAZ"])
+        # ---- KPI GLOBAUX ----
+        total_ventes    = len(df_filtered)
+        total_obj       = int(objectifs["Objectifs Total"].sum())
+        total_obj_elec  = int(objectifs["Objectif Elec"].sum())
+        total_obj_gaz   = int(objectifs["Objectif Gaz"].sum())
+        v_elec_global   = len(df_filtered[df_filtered["energie"] == "ELEC"])
+        v_gaz_global    = len(df_filtered[df_filtered["energie"] == "GAZ"])
         v_elec_gaz_global = v_elec_global + v_gaz_global
-        obj_elec_gaz = total_obj_elec + total_obj_gaz
+        obj_elec_gaz    = total_obj_elec + total_obj_gaz
+        taux_global     = total_ventes / total_obj if total_obj else 0
+        taux_elec       = v_elec_global / total_obj_elec if total_obj_elec else 0
+        taux_gaz        = v_gaz_global / total_obj_gaz if total_obj_gaz else 0
+        kpi_jour        = round(total_ventes / jours, 1) if jours else 0
 
-        taux_global = total_ventes / total_obj if total_obj else 0
-        taux_elec = v_elec_global / total_obj_elec if total_obj_elec else 0
-        taux_gaz = v_gaz_global / total_obj_gaz if total_obj_gaz else 0
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(metric_card(
+            "🎯", f"{total_ventes}/{total_obj}",
+            "Ventes totales / Objectif",
+            sub=f"Taux global : {taux_global:.0%}",
+            color="blue" if taux_global >= 0.7 else "red"
+        ), unsafe_allow_html=True)
+        c2.markdown(metric_card(
+            "⚡", f"{v_elec_global}/{total_obj_elec}",
+            "Électricité",
+            sub=f"Taux : {taux_elec:.0%}",
+            color="blue"
+        ), unsafe_allow_html=True)
+        c3.markdown(metric_card(
+            "🔥", f"{v_gaz_global}/{total_obj_gaz}",
+            "Gaz",
+            sub=f"Taux : {taux_gaz:.0%}",
+            color="orange"
+        ), unsafe_allow_html=True)
+        c4.markdown(metric_card(
+            "📅", str(kpi_jour),
+            "Ventes / Jour ouvré",
+            sub=f"{jours} jours ouvrés ce mois",
+            color="green" if kpi_jour > 0 else "red"
+        ), unsafe_allow_html=True)
 
-        c1, c2, c3 = st.columns(3)
-        c4, c5, c6 = st.columns(3)
+        c5, c6, c7, c8 = st.columns(4)
+        c5.markdown(metric_card(
+            "📊", f"{taux_global:.0%}",
+            "% Atteinte globale",
+            color="green" if taux_global >= 1 else ("orange" if taux_global >= 0.7 else "red")
+        ), unsafe_allow_html=True)
+        c6.markdown(metric_card(
+            "⚡", f"{taux_elec:.0%}",
+            "% Atteinte Elec",
+            color="green" if taux_elec >= 1 else ("orange" if taux_elec >= 0.7 else "red")
+        ), unsafe_allow_html=True)
+        c7.markdown(metric_card(
+            "🔥", f"{taux_gaz:.0%}",
+            "% Atteinte Gaz",
+            color="green" if taux_gaz >= 1 else ("orange" if taux_gaz >= 0.7 else "red")
+        ), unsafe_allow_html=True)
+        c8.markdown(metric_card(
+            "🏢", str(n_fournisseurs_actifs),
+            "Fournisseurs actifs",
+            sub=f"{n_agents_actifs} agents suivis",
+            color="blue"
+        ), unsafe_allow_html=True)
 
-        c1.markdown(
-            f"<div class='metric-card'>"
-            f"<div class='metric-value'>{v_elec_gaz_global}/{obj_elec_gaz}</div>"
-            f"<div class='metric-label'>Ventes (Elec+Gaz) / Objectif</div>"
-            f"</div>", unsafe_allow_html=True
-        )
-        c2.markdown(
-            f"<div class='metric-card'>"
-            f"<div class='metric-value'>⚡ {v_elec_global}/{total_obj_elec}</div>"
-            f"<div class='metric-label'>Ventes Elec / Objectif Elec</div>"
-            f"</div>", unsafe_allow_html=True
-        )
-        c3.markdown(
-            f"<div class='metric-card'>"
-            f"<div class='metric-value'>🔥 {v_gaz_global}/{total_obj_gaz}</div>"
-            f"<div class='metric-label'>Ventes Gaz / Objectif Gaz</div>"
-            f"</div>", unsafe_allow_html=True
-        )
-        # Rangée du bas alignée sous la rangée du haut : Total | Elec | Gaz
-        c4.markdown(
-            f"<div class='metric-card'>"
-            f"<div class='metric-value'>{emoji(taux_global)} {taux_global:.0%}</div>"
-            f"<div class='metric-label'>% Total</div>"
-            f"</div>", unsafe_allow_html=True
-        )
-        c5.markdown(
-            f"<div class='metric-card'>"
-            f"<div class='metric-value'>{emoji(taux_elec)} {taux_elec:.0%}</div>"
-            f"<div class='metric-label'>% Elec</div>"
-            f"</div>", unsafe_allow_html=True
-        )
-        c6.markdown(
-            f"<div class='metric-card'>"
-            f"<div class='metric-value'>{emoji(taux_gaz)} {taux_gaz:.0%}</div>"
-            f"<div class='metric-label'>% Gaz</div>"
-            f"</div>", unsafe_allow_html=True
-        )
-
-        # ---- MODIFICATION 3 : Tableau fournisseurs exportable ----
-        st.markdown("<div class='section-title'>Détail par fournisseur</div>", unsafe_allow_html=True)
+        # ---- TABLEAU FOURNISSEURS ----
+        st.markdown(section_label("Détail par fournisseur"), unsafe_allow_html=True)
 
         ventes = df_filtered.groupby("get_provider").size().reset_index(name="ventes")
         df_obj = objectifs.merge(
@@ -501,89 +713,89 @@ if uploaded_file:
         for idx, row in df_obj.iterrows():
             obj_row = objectifs[objectifs["Fournisseur"] == row["Fournisseur"]]
             df_obj_export.at[idx, "obj_elec"] = obj_row["Objectif Elec"].sum()
-            df_obj_export.at[idx, "obj_gaz"] = obj_row["Objectif Gaz"].sum()
+            df_obj_export.at[idx, "obj_gaz"]  = obj_row["Objectif Gaz"].sum()
 
-        # Construction des lignes HTML du tableau
         n_rows = len(df_obj)
         table_html_rows = ""
         for i, (_, r) in enumerate(df_obj.iterrows()):
-            obj_row = objectifs[objectifs["Fournisseur"] == r["Fournisseur"]]
+            obj_row  = objectifs[objectifs["Fournisseur"] == r["Fournisseur"]]
             obj_elec = int(obj_row["Objectif Elec"].sum())
-            obj_gaz = int(obj_row["Objectif Gaz"].sum())
-            v_elec = int(r.get("v_elec", 0))
-            v_gaz = int(r.get("v_gaz", 0))
-            p = r["ventes"] / r["Objectifs Total"] if r["Objectifs Total"] else 0
-            color = "#16A34A" if p >= 1 else "#EA580C" if p >= 0.7 else "#DC2626"
+            obj_gaz  = int(obj_row["Objectif Gaz"].sum())
+            v_elec   = int(r.get("v_elec", 0))
+            v_gaz    = int(r.get("v_gaz", 0))
+            p        = r["ventes"] / r["Objectifs Total"] if r["Objectifs Total"] else 0
+            cp       = "#00C48C" if p >= 1 else "#FF6B35" if p >= 0.7 else "#FF4757"
+            cp_bg    = "#DCFCE7" if p >= 1 else "#FFF7ED" if p >= 0.7 else "#FEE2E2"
             pct_fill = min(p * 100, 100)
-            bg = "#F8FAFC" if i % 2 == 0 else "#FFFFFF"
+            bg       = "#F8FAFF" if i % 2 == 0 else "#FFFFFF"
 
             table_html_rows += f"""
-            <tr style="background:{bg};">
-              <td style="padding:5px 10px;font-weight:500;color:#1E293B;">{r['Fournisseur']}</td>
-              <td style="padding:5px 10px;text-align:center;color:#334155;">⚡ {v_elec}/{obj_elec}</td>
-              <td style="padding:5px 10px;text-align:center;color:#334155;">🔥 {v_gaz}/{obj_gaz}</td>
-              <td style="padding:5px 10px;text-align:center;font-weight:700;color:#0F172A;">{int(r['ventes'])}/{int(r['Objectifs Total'])}</td>
-              <td style="padding:5px 10px;text-align:center;font-weight:700;color:{color};">{p:.0%}</td>
-              <td style="padding:5px 10px;width:120px;">
-                <div style="background:#E2E8F0;border-radius:6px;height:10px;width:100%;">
-                  <div style="background:{color};border-radius:6px;height:10px;width:{pct_fill:.1f}%;"></div>
+            <tr style="background:{bg};transition:background 0.15s;" onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='{bg}'">
+              <td style="padding:7px 12px;font-weight:600;color:#1A1D2E;font-size:13px;">{r['Fournisseur']}</td>
+              <td style="padding:7px 12px;text-align:center;color:#334155;font-size:13px;">⚡ <strong>{v_elec}</strong><span style='color:#94A3B8'>/{obj_elec}</span></td>
+              <td style="padding:7px 12px;text-align:center;color:#334155;font-size:13px;">🔥 <strong>{v_gaz}</strong><span style='color:#94A3B8'>/{obj_gaz}</span></td>
+              <td style="padding:7px 12px;text-align:center;font-size:14px;"><strong style='color:#0E4ACB'>{int(r['ventes'])}</strong><span style='color:#94A3B8;font-size:12px'>/{int(r['Objectifs Total'])}</span></td>
+              <td style="padding:7px 12px;text-align:center;">
+                <span style="background:{cp_bg};color:{cp};padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">{p:.0%}</span>
+              </td>
+              <td style="padding:7px 14px;width:140px;">
+                <div style="background:#E8EFFC;border-radius:6px;height:8px;width:100%;overflow:hidden;">
+                  <div style="background:linear-gradient(90deg,{cp},{cp}cc);border-radius:6px;height:8px;width:{pct_fill:.1f}%;transition:width 0.4s;"></div>
                 </div>
               </td>
             </tr>"""
 
-        # Boutons export — visibles uniquement pour l'admin
         fname = f"rapport_{datetime.today().strftime('%Y%m%d')}.png"
         show_buttons = "flex" if is_admin else "none"
+
         html2canvas_component = f"""
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
 <style>
-  body {{ margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }}
-  .btn-bar {{
-    display:{show_buttons}; gap:8px; justify-content:flex-end;
-    margin-bottom:8px;
-  }}
-  .btn-export {{
-    padding:7px 16px; border:none; border-radius:8px; cursor:pointer;
-    font-size:13px; font-weight:600; transition:opacity .15s;
-  }}
-  .btn-export:hover {{ opacity:0.85; }}
-  .btn-dl  {{ background:#0F8BC6; color:#fff; }}
-  .btn-cp  {{ background:#F1F5F9; color:#334155; border:1px solid #CBD5E1; }}
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  * {{ box-sizing:border-box; }}
+  body {{ margin:0; padding:0; background:#F4F6FA; font-family:'Inter',sans-serif; }}
+  .btn-bar {{ display:{show_buttons}; gap:8px; justify-content:flex-end; margin-bottom:10px; }}
+  .btn-x {{ padding:7px 16px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; transition:opacity .15s; font-family:'Inter',sans-serif; }}
+  .btn-x:hover {{ opacity:0.85; }}
+  .btn-dl {{ background:linear-gradient(135deg,#0E4ACB,#3B6FE0); color:#fff; }}
+  .btn-cp {{ background:#FFFFFF; color:#0E4ACB; border:1.5px solid #0E4ACB; }}
 </style>
 
 <div class="btn-bar">
-  <button class="btn-export btn-cp" onclick="doCapture('copy')">📋 Copier</button>
-  <button class="btn-export btn-dl" onclick="doCapture('download')">⬇️ Télécharger PNG</button>
+  <button class="btn-x btn-cp" onclick="doCapture('copy')">📋 Copier</button>
+  <button class="btn-x btn-dl" onclick="doCapture('download')">⬇️ Télécharger PNG</button>
 </div>
 
-<div id="rapport-table" style="background:#FFFFFF;border-radius:12px;overflow:hidden;border:1px solid #E2E8F0;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-  <div style="background:#0F8BC6;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;">
-    <span style="color:rgba(255,255,255,0.9);font-size:12px;font-weight:500;">📅 {d_start} → {d_end}</span>
-    <span style="color:rgba(255,255,255,0.7);font-size:11px;">{datetime.today().strftime('%d/%m/%Y')}</span>
+<div id="rapport-table" style="background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E8EFFC;box-shadow:0 4px 20px rgba(14,74,203,0.08);">
+  <div style="background:linear-gradient(135deg,#0A3499,#0E4ACB);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="color:#fff;font-size:11px;opacity:0.7;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;font-family:'Inter',sans-serif;">Rapport Ventes</div>
+      <div style="color:#fff;font-size:14px;font-weight:700;margin-top:2px;font-family:'Inter',sans-serif;">Détail par fournisseur</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="color:rgba(255,255,255,0.7);font-size:11px;font-family:'Inter',sans-serif;">📅 {d_start} → {d_end}</div>
+      <div style="color:rgba(255,255,255,0.5);font-size:10px;margin-top:2px;font-family:'Inter',sans-serif;">Généré le {datetime.today().strftime('%d/%m/%Y à %H:%M')}</div>
+    </div>
   </div>
-  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+  <table style="width:100%;border-collapse:collapse;font-family:'Inter',sans-serif;">
     <thead>
-      <tr style="background:#F1F5F9;border-bottom:2px solid #CBD5E1;">
-        <th style="padding:8px 10px;text-align:left;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">Fournisseur</th>
-        <th style="padding:8px 10px;text-align:center;color:#475569;font-size:11px;text-transform:uppercase;">Elec</th>
-        <th style="padding:8px 10px;text-align:center;color:#475569;font-size:11px;text-transform:uppercase;">Gaz</th>
-        <th style="padding:8px 10px;text-align:center;color:#475569;font-size:11px;text-transform:uppercase;">Total</th>
-        <th style="padding:8px 10px;text-align:center;color:#475569;font-size:11px;text-transform:uppercase;">Taux</th>
-        <th style="padding:8px 10px;text-align:center;color:#475569;font-size:11px;text-transform:uppercase;">Progression</th>
+      <tr style="background:#F4F6FA;border-bottom:2px solid #E8EFFC;">
+        <th style="padding:9px 12px;text-align:left;color:#64748B;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">Fournisseur</th>
+        <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Elec</th>
+        <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Gaz</th>
+        <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Total</th>
+        <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Taux</th>
+        <th style="padding:9px 12px;text-align:center;color:#64748B;font-size:11px;text-transform:uppercase;font-weight:700;">Progression</th>
       </tr>
     </thead>
     <tbody>{table_html_rows}</tbody>
   </table>
-  <div style="background:#F8FAFC;padding:6px 16px;border-top:1px solid #E2E8F0;text-align:right;">
-    <span style="color:#94A3B8;font-size:11px;">Généré le {datetime.today().strftime('%d/%m/%Y à %H:%M')}</span>
-  </div>
 </div>
 
 <script>
 function doCapture(action) {{
   const el = document.getElementById('rapport-table');
-  html2canvas(el, {{ backgroundColor: '#FFFFFF', scale: 2, useCORS: true, logging: false }})
+  html2canvas(el, {{ backgroundColor:'#FFFFFF', scale:2, useCORS:true, logging:false }})
     .then(canvas => {{
       if (action === 'download') {{
         const a = document.createElement('a');
@@ -599,14 +811,15 @@ function doCapture(action) {{
               btn.textContent = '✅ Copié !';
               btn.style.background = '#DCFCE7';
               btn.style.color = '#16A34A';
+              btn.style.borderColor = '#16A34A';
               setTimeout(() => {{
                 btn.textContent = orig;
                 btn.style.background = '';
                 btn.style.color = '';
-              }}, 2000);
+                btn.style.borderColor = '';
+              }}, 2500);
             }})
             .catch(() => {{
-              // Fallback Chrome si clipboard API refusée : ouvre dans un onglet
               const url = URL.createObjectURL(blob);
               window.open(url, '_blank');
             }});
@@ -616,17 +829,25 @@ function doCapture(action) {{
 }}
 </script>"""
 
-        components.html(html2canvas_component, height=n_rows * 38 + 160, scrolling=False)
+        components.html(html2canvas_component, height=n_rows * 40 + 180, scrolling=False)
 
     # ================================================================
     # PAGE AGENTS
     # ================================================================
     elif page == "👤 Agents":
 
-        st.header("👤 Performance Agents")
-        st.markdown(period_html, unsafe_allow_html=True)
+        st.markdown("""
+        <div class='page-header'>
+          <div class='page-header-left'>
+            <h1>Performance Agents</h1>
+            <p>Classement et suivi individuel de l'équipe</p>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        jours = get_working_days()
+        st.markdown(period_pill, unsafe_allow_html=True)
+
+        # Calculs — inchangés
         obj_agent = math.ceil(185 * 0.75)
 
         ventes_agent = df_filtered.groupby("agent").size().reset_index(name="ventes")
@@ -637,48 +858,67 @@ function doCapture(action) {{
         ventes_energie = ensure_energie_cols(ventes_energie)
         ventes_agent = ventes_agent.merge(ventes_energie, on="agent", how="left").fillna(0)
         ventes_agent["taux"] = ventes_agent["ventes"] / obj_agent
-        ventes_agent["kpi"] = ventes_agent["ventes"] / jours if jours else 0
+        ventes_agent["kpi"]  = ventes_agent["ventes"] / jours if jours else 0
         ventes_agent = ventes_agent.sort_values("taux", ascending=False)
 
         total_ventes_agents = int(ventes_agent["ventes"].sum())
         meilleur = ventes_agent.iloc[0]["agent"] if not ventes_agent.empty else "—"
+        meilleur_taux = ventes_agent.iloc[0]["taux"] if not ventes_agent.empty else 0
+        n_vert = len(ventes_agent[ventes_agent["taux"] >= 1])
+        n_orange = len(ventes_agent[(ventes_agent["taux"] >= 0.7) & (ventes_agent["taux"] < 1)])
+        n_rouge = len(ventes_agent[ventes_agent["taux"] < 0.7])
 
-        m1, m2, m3 = st.columns(3)
-        m1.markdown(
-            f"<div class='metric-card'><div class='metric-value'>{total_ventes_agents}</div>"
-            f"<div class='metric-label'>Ventes totales</div></div>", unsafe_allow_html=True
-        )
-        m2.markdown(
-            f"<div class='metric-card'><div class='metric-value'>{meilleur}</div>"
-            f"<div class='metric-label'>Meilleur agent</div></div>", unsafe_allow_html=True
-        )
-        m3.markdown(
-            f"<div class='metric-card'><div class='metric-value'>{jours}</div>"
-            f"<div class='metric-label'>Jours ouvrés (mois)</div></div>", unsafe_allow_html=True
-        )
+        # KPI cards
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(metric_card("👥", str(total_ventes_agents), "Ventes équipe",
+                                sub=f"Objectif : {obj_agent} / agent", color="blue"), unsafe_allow_html=True)
+        c2.markdown(metric_card("🏆", meilleur, "Meilleur agent",
+                                sub=f"Taux : {meilleur_taux:.0%}", color="green"), unsafe_allow_html=True)
+        c3.markdown(metric_card("📅", str(jours), "Jours ouvrés",
+                                sub=f"Mois en cours", color="blue"), unsafe_allow_html=True)
+        c4.markdown(metric_card("📈", f"{round(total_ventes_agents/jours,1) if jours else 0}/J",
+                                "Rythme équipe",
+                                sub=f"🟢 {n_vert}  🟠 {n_orange}  🔴 {n_rouge}", color="orange"), unsafe_allow_html=True)
 
-        st.markdown("<div class='section-title'>Classement agents</div>", unsafe_allow_html=True)
+        st.markdown(section_label("Classement des agents"), unsafe_allow_html=True)
 
         BADGES = {0: "🥇", 1: "🥈", 2: "🥉"}
 
         for i, (_, r) in enumerate(ventes_agent.iterrows()):
             v_total = int(r["ventes"])
-            v_elec = int(r["ELEC"])
-            v_gaz = int(r["GAZ"])
-            taux = r["taux"]
-            row_class = "agent-row" if i % 2 == 0 else "agent-row-alt"
+            v_elec  = int(r["ELEC"])
+            v_gaz   = int(r["GAZ"])
+            taux    = r["taux"]
+            kpi_j   = round(r["kpi"], 1)
+            badge   = BADGES.get(i, f"#{i+1}")
+            cp      = color_pct(taux)
+            sb      = status_badge(taux)
+
             with st.container():
-                st.markdown(f"<div class='{row_class}'>", unsafe_allow_html=True)
-                c1, c2, c3, c4 = st.columns([3, 5, 4, 2])
-                badge = BADGES.get(i, "")
-                c1.markdown(f"<span class='top-badge'>{badge}</span> {r['agent']}", unsafe_allow_html=True)
-                c2.progress(min(taux, 1.0))
-                c3.markdown(
-                    f"⚡ {v_elec} &nbsp;&nbsp; 🔥 {v_gaz} &nbsp;&nbsp; "
-                    f"🎯 {v_total}/{obj_agent} &nbsp;&nbsp; {emoji(taux)} {taux:.0%}",
+                st.markdown(f"<div class='provider-row'>", unsafe_allow_html=True)
+                c1, c2, c3, c4, c5 = st.columns([1, 3, 5, 4, 2])
+                c1.markdown(f"<div style='font-size:1.2rem;text-align:center;padding-top:4px'>{badge}</div>",
+                            unsafe_allow_html=True)
+                c2.markdown(
+                    f"<div style='font-weight:700;color:#1A1D2E;font-size:0.9rem;padding-top:6px'>{r['agent']}</div>"
+                    f"<div style='margin-top:2px'>{sb}</div>",
                     unsafe_allow_html=True
                 )
-                c4.write(f"📅 {round(r['kpi'], 1)}/J")
+                c3.progress(min(taux, 1.0))
+                c4.markdown(
+                    f"<div style='font-size:0.85rem;color:#334155;padding-top:4px'>"
+                    f"⚡ <strong>{v_elec}</strong> &nbsp; 🔥 <strong>{v_gaz}</strong>"
+                    f" &nbsp;&nbsp; 🎯 <strong style='color:#0E4ACB'>{v_total}</strong>"
+                    f"<span style='color:#94A3B8'>/{obj_agent}</span>"
+                    f" &nbsp; <strong style='color:{cp}'>{taux:.0%}</strong>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+                c5.markdown(
+                    f"<div style='font-size:0.82rem;color:#64748B;text-align:center;padding-top:4px'>"
+                    f"📅 <strong>{kpi_j}</strong>/J</div>",
+                    unsafe_allow_html=True
+                )
                 st.markdown("</div>", unsafe_allow_html=True)
 
     # ================================================================
@@ -686,79 +926,130 @@ function doCapture(action) {{
     # ================================================================
     elif page == "🎯 Objectifs":
 
-        st.header("🎯 Performance détaillée")
-        st.markdown(period_html, unsafe_allow_html=True)
+        st.markdown("""
+        <div class='page-header'>
+          <div class='page-header-left'>
+            <h1>Performance Détaillée</h1>
+            <p>Suivi individuel par agent et fournisseur</p>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        colA, colB = st.columns(2)
-        heures = colA.number_input("Heures", value=185.0)
-        agent = colB.selectbox("Agent", df_filtered["agent"].unique())
+        st.markdown(period_pill, unsafe_allow_html=True)
 
-        df_agent = df_filtered[df_filtered["agent"] == agent]
-        obj_agent = round_excel(heures * 0.75)
+        colA, colB = st.columns([1, 2])
+        heures = colA.number_input("⏱ Heures travaillées", value=185.0, step=1.0)
+        agent  = colB.selectbox("👤 Agent", df_filtered["agent"].unique())
+
+        df_agent    = df_filtered[df_filtered["agent"] == agent]
+        obj_agent   = round_excel(heures * 0.75)
         ventes_total = len(df_agent)
-        taux = ventes_total / obj_agent if obj_agent else 0
-
+        taux         = ventes_total / obj_agent if obj_agent else 0
         v_elec_agent = len(df_agent[df_agent["energie"] == "ELEC"])
-        v_gaz_agent = len(df_agent[df_agent["energie"] == "GAZ"])
+        v_gaz_agent  = len(df_agent[df_agent["energie"] == "GAZ"])
+        kpi_j_agent  = round(ventes_total / jours, 1) if jours else 0
+        cp           = color_pct(taux)
 
-        m1, m2, m3 = st.columns(3)
-        m1.markdown(
-            f"<div class='metric-card'><div class='metric-value'>{ventes_total}</div>"
-            f"<div class='metric-label'>Ventes totales</div></div>", unsafe_allow_html=True
-        )
-        m2.markdown(
-            f"<div class='metric-card'><div class='metric-value'>⚡ {v_elec_agent} &nbsp; 🔥 {v_gaz_agent}</div>"
-            f"<div class='metric-label'>Elec / Gaz</div></div>", unsafe_allow_html=True
-        )
-        m3.markdown(
-            f"<div class='metric-card'><div class='metric-value'>{emoji(taux)} {taux:.0%}</div>"
-            f"<div class='metric-label'>Taux objectif</div></div>", unsafe_allow_html=True
-        )
+        # Cards agent
+        c1, c2, c3, c4 = st.columns(4)
+        c1.markdown(metric_card("🎯", f"{ventes_total}/{obj_agent}", "Ventes / Objectif",
+                                sub=f"Taux : {taux:.0%}",
+                                color="green" if taux >= 1 else ("orange" if taux >= 0.7 else "red")),
+                    unsafe_allow_html=True)
+        c2.markdown(metric_card("⚡", str(v_elec_agent), "Électricité",
+                                sub=f"sur {ventes_total} ventes", color="blue"), unsafe_allow_html=True)
+        c3.markdown(metric_card("🔥", str(v_gaz_agent), "Gaz",
+                                sub=f"sur {ventes_total} ventes", color="orange"), unsafe_allow_html=True)
+        c4.markdown(metric_card("📅", f"{kpi_j_agent}/J", "Rythme",
+                                sub=f"{jours} jours ouvrés", color="blue"), unsafe_allow_html=True)
 
-        st.markdown("<div class='block'>", unsafe_allow_html=True)
-        st.subheader(agent)
+        # Bloc récap agent
+        st.markdown(
+            f"<div class='agent-recap'>"
+            f"<h2>{agent}</h2>"
+            f"<div style='margin-bottom:8px'>{status_badge(taux)}</div>",
+            unsafe_allow_html=True
+        )
         st.progress(min(taux, 1.0))
-        st.write(f"{emoji(taux)} {ventes_total}/{obj_agent} ({taux:.0%})")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='margin-top:6px;font-size:0.9rem;color:#64748B'>"
+            f"<strong style='color:{cp}'>{ventes_total}</strong> ventes "
+            f"sur <strong>{obj_agent}</strong> objectif "
+            f"— <strong style='color:{cp}'>{taux:.0%}</strong>"
+            f"</div></div>",
+            unsafe_allow_html=True
+        )
 
-        st.markdown("<div class='section-title'>⚡ Ventes par fournisseur</div>", unsafe_allow_html=True)
+        st.markdown(section_label("Détail par fournisseur"), unsafe_allow_html=True)
 
         special = ["HOMESERVE", "FREE"]
 
         for f in objectifs["Fournisseur"].dropna().unique():
             if f in special:
                 continue
-            df_f = df_agent[df_agent["get_provider"] == f]
+            df_f    = df_agent[df_agent["get_provider"] == f]
             obj_row = objectifs[objectifs["Fournisseur"] == f]
             obj_total_f = round_excel(heures * 0.75 * (obj_row["Objectifs Total"].sum() / objectif_total))
-            obj_elec_f = round_excel(heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total))
-            obj_gaz_f = round_excel(heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total))
+            obj_elec_f  = round_excel(heures * 0.75 * (obj_row["Objectif Elec"].sum() / objectif_total))
+            obj_gaz_f   = round_excel(heures * 0.75 * (obj_row["Objectif Gaz"].sum() / objectif_total))
             v_total = len(df_f)
-            v_elec = len(df_f[df_f["energie"] == "ELEC"])
-            v_gaz = len(df_f[df_f["energie"] == "GAZ"])
-            p = v_total / obj_total_f if obj_total_f else 0
+            v_elec  = len(df_f[df_f["energie"] == "ELEC"])
+            v_gaz   = len(df_f[df_f["energie"] == "GAZ"])
+            p       = v_total / obj_total_f if obj_total_f else 0
+            cp_f    = color_pct(p)
 
             with st.container():
-                st.markdown("<div class='fournisseur-row'>", unsafe_allow_html=True)
-                c1, c2, c3 = st.columns([2, 5, 5])
-                c1.write(f)
-                c2.progress(min(p, 1.0))
-                c3.markdown(
-                    f"⚡ {v_elec}/{obj_elec_f} &nbsp;&nbsp; 🔥 {v_gaz}/{obj_gaz_f} &nbsp;&nbsp; "
-                    f"🎯 {v_total}/{obj_total_f} &nbsp;&nbsp; {emoji(p)} {p:.0%}",
+                st.markdown("<div class='provider-row'>", unsafe_allow_html=True)
+                c1, c2, c3, c4 = st.columns([2, 1, 5, 4])
+                c1.markdown(
+                    f"<div style='font-weight:700;color:#1A1D2E;font-size:0.88rem;padding-top:6px'>{f}</div>",
+                    unsafe_allow_html=True
+                )
+                c2.markdown(
+                    f"<div style='padding-top:4px'>{status_badge(p)}</div>",
+                    unsafe_allow_html=True
+                )
+                c3.progress(min(p, 1.0))
+                c4.markdown(
+                    f"<div style='font-size:0.83rem;color:#334155;padding-top:4px'>"
+                    f"⚡ <strong>{v_elec}</strong><span style='color:#94A3B8'>/{obj_elec_f}</span>"
+                    f" &nbsp; 🔥 <strong>{v_gaz}</strong><span style='color:#94A3B8'>/{obj_gaz_f}</span>"
+                    f" &nbsp; 🎯 <strong style='color:{cp_f}'>{v_total}</strong>"
+                    f"<span style='color:#94A3B8'>/{obj_total_f}</span>"
+                    f" &nbsp; <strong style='color:{cp_f}'>{p:.0%}</strong>"
+                    f"</div>",
                     unsafe_allow_html=True
                 )
                 st.markdown("</div>", unsafe_allow_html=True)
 
 else:
-    st.info("🔒 Ajoute un fichier via le panneau Admin ci-dessous.")
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔐 Admin")
-    password = st.sidebar.text_input("Mot de passe", type="password")
-    is_admin = password == "hello123"
-    if is_admin:
-        uploaded_file_admin = st.sidebar.file_uploader("Uploader fichier Excel", type=["xlsx"])
-        if uploaded_file_admin:
-            with open(SAVE_PATH, "wb") as f:
-                f.write(uploaded_file_admin.getbuffer())
-            st.rerun()
+    # Écran d'accueil sans fichier
+    st.markdown("""
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+                min-height:60vh;text-align:center;padding:40px;">
+      <div style="font-size:3rem;margin-bottom:16px;">⚡</div>
+      <h1 style="font-size:1.8rem;font-weight:800;color:#1A1D2E;margin-bottom:8px;">
+        Tableau de bord commercial
+      </h1>
+      <p style="color:#64748B;font-size:1rem;max-width:400px;line-height:1.6;">
+        Connectez-vous en tant qu'administrateur dans la barre latérale
+        pour charger le fichier de données.
+      </p>
+      <div style="margin-top:24px;background:#E8EFFC;border-radius:12px;padding:16px 24px;
+                  color:#0E4ACB;font-size:0.85rem;font-weight:600;">
+        🔐 Panneau Admin → dans la sidebar
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### 🔐 Admin")
+        password = st.text_input("Mot de passe", type="password")
+        is_admin = password == "hello123"
+        if is_admin:
+            uploaded_file_admin = st.file_uploader("Uploader fichier Excel", type=["xlsx"])
+            if uploaded_file_admin:
+                with open(SAVE_PATH, "wb") as f:
+                    f.write(uploaded_file_admin.getbuffer())
+                st.rerun()
