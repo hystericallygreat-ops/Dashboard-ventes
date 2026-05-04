@@ -359,11 +359,22 @@ def color_pct(p):
 def round_excel(x):
     return int(x + 0.5 + 1e-9)
 
-def get_working_days():
-    today = datetime.today()
-    start = today.replace(day=1)
+def get_working_days(date_start=None, date_end=None):
+    """Compte les jours ouvrés du mois de la période sélectionnée.
+    Si date_end est dans le passé (mois terminé), compte tout le mois complet.
+    Sinon compte jusqu'à aujourd'hui dans le mois en cours."""
+    today = datetime.today().date()
     fr = holidays.FR()
-    days = pd.date_range(start, today)
+    if date_start is not None and date_end is not None:
+        # On prend le mois de date_end comme référence
+        ref = date_end if isinstance(date_end, type(today)) else date_end.date()
+        start = ref.replace(day=1)
+        # Si le mois est terminé, compter tout le mois; sinon jusqu'à aujourd'hui
+        end = ref if ref < today else today
+    else:
+        start = today.replace(day=1)
+        end = today
+    days = pd.date_range(start, end)
     return len([d for d in days if d.weekday() < 5 and d.date() not in fr])
 
 def ensure_energie_cols(df_pivot):
@@ -618,7 +629,10 @@ if uploaded_file:
         ]
 
     objectif_total = objectifs["Objectifs Total"].sum()
-    jours = get_working_days()
+    jours = get_working_days(
+        dates[0] if len(dates) == 2 else None,
+        dates[1] if len(dates) == 2 else None
+    )
 
     # ================================================================
     # PAGE DASHBOARD
@@ -900,7 +914,7 @@ function doCapture(action) {{
 
             with st.container():
                 st.markdown(f"<div class='provider-row'>", unsafe_allow_html=True)
-                c1, c2, c3, c4, c5 = st.columns([1, 3, 5, 4, 2])
+                c1, c2, c3, c4, c5 = st.columns([1, 3, 5, 6, 2])
                 c1.markdown(f"<div style='font-size:1.2rem;text-align:center;padding-top:4px'>{badge}</div>",
                             unsafe_allow_html=True)
                 c2.markdown(
@@ -909,7 +923,7 @@ function doCapture(action) {{
                 )
                 c3.progress(min(taux, 1.0))
                 c4.markdown(
-                    f"<div style='font-size:0.85rem;color:#334155;padding-top:4px'>"
+                    f"<div style='font-size:0.85rem;color:#334155;padding-top:4px;white-space:nowrap;overflow:hidden;'>"
                     f"⚡ <strong>{v_elec}</strong> &nbsp; 🔥 <strong>{v_gaz}</strong>"
                     f" &nbsp;&nbsp; 🎯 <strong style='color:#1AABDB'>{v_total}</strong>"
                     f"<span style='color:#94A3B8'>/{obj_agent}</span>"
@@ -1006,18 +1020,18 @@ function doCapture(action) {{
                 st.markdown("<div class='provider-row'>", unsafe_allow_html=True)
                 c1, c2, c3 = st.columns([2, 4, 5])
                 c1.markdown(
-                    f"<div style='font-weight:700;color:#1A3A5C;font-size:0.88rem;padding-top:6px'>{f}</div>"
-                    f"<div style='margin-top:3px'>{status_badge(p)}</div>",
+                    f"<div style='font-weight:700;color:#1A3A5C;font-size:0.88rem;padding-top:6px'>{f}</div>",
                     unsafe_allow_html=True
                 )
                 c2.progress(min(p, 1.0))
                 c3.markdown(
-                    f"<div style='font-size:0.83rem;color:#334155;padding-top:4px'>"
+                    f"<div style='font-size:0.83rem;color:#334155;padding-top:4px;white-space:nowrap;overflow:hidden;'>"
                     f"⚡ <strong>{v_elec}</strong><span style='color:#94A3B8'>/{obj_elec_f}</span>"
                     f" &nbsp; 🔥 <strong>{v_gaz}</strong><span style='color:#94A3B8'>/{obj_gaz_f}</span>"
                     f" &nbsp; 🎯 <strong style='color:{cp_f}'>{v_total}</strong>"
                     f"<span style='color:#94A3B8'>/{obj_total_f}</span>"
                     f" &nbsp; <strong style='color:{cp_f}'>{p:.0%}</strong>"
+                    f" &nbsp; {status_badge(p)}"
                     f"</div>",
                     unsafe_allow_html=True
                 )
